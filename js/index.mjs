@@ -1,21 +1,7 @@
-const vsSource = `
-attribute vec4 aVertexPosition;
+window.onload = async () => {
+    const vsSource = await (await fetch(`shader/index.vert`)).text();
+    const fsSource = await (await fetch(`shader/index.frag`)).text();
 
-uniform mat4 uModelViewMatrix;
-uniform mat4 uProjectionMatrix;
-
-void main() {
-  gl_Position = uProjectionMatrix * uModelViewMatrix * aVertexPosition;
-}
-`;
-
-const fsSource = `
-void main() {
-  gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
-}
-`;
-
-window.onload = () => {
     // https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/Tutorial/Getting_started_with_WebGL
     const cnvMain = document.createElement(`canvas`);
     cnvMain.setAttribute(`width`, window.innerWidth);
