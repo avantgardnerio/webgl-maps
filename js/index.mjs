@@ -81,10 +81,13 @@ const initBuffers = (gl) => {
 
     // Now create an array of positions for the square.
     const positions = [
-        -1.0, 1.0,
-        1.0, 1.0,
         -1.0, -1.0,
+        1.0, 1.0,
+        -1.0, 1.0,
+
+        1.0, 1.0,
         1.0, -1.0,
+        -1.0, -1.0
     ];
 
     // Now pass the list of positions into WebGL to build the shape
@@ -153,7 +156,7 @@ const drawScene = (gl, programInfo, buffers) => {
         modelViewMatrix
     );
 
-    const vertexCount = 4;
-    gl.drawArrays(gl.TRIANGLE_STRIP, offset, vertexCount);
+    const vertexCount = 6;
+    gl.drawArrays(gl.TRIANGLES, offset, vertexCount);
 }
 
