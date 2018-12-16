@@ -24,7 +24,14 @@ window.onload = async () => {
         },
     };
     const vertexBuffer = initBuffers(gl);
-    drawScene(gl, programInfo, vertexBuffer);
+    const start = new Date().getTime();
+    const render = () => {
+        const now = new Date().getTime();
+        const delta = (now - start) / 1000;
+        drawScene(gl, programInfo, vertexBuffer, delta);
+        requestAnimationFrame(render);
+    }
+    requestAnimationFrame(render);
 }
 
 const initShaderProgram = (gl, vsSource, fsSource) => {
@@ -57,15 +64,24 @@ const loadShader = (gl, type, source) => {
 const initBuffers = (gl) => {
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    const t = (1.0 + Math.sqrt(5.0)) / 2.0;
     const positions = [
-        -1.0, -1.0,
-        1.0, 1.0,
-        -1.0, 1.0,
+        -1,  t,  0,
+        1,  t,  0,
+        -1, -t,  0,
+        1, -t,  0,
 
-        1.0, 1.0,
-        1.0, -1.0,
-        -1.0, -1.0
+        0, -1,  t,
+        0,  1,  t,
+        0, -1, -t,
+        0,  1, -t,
+
+        t,  0, -1,
+        t,  0,  1,
+        -t,  0, -1,
+        -t,  0,  1,
     ];
+
     gl.bufferData(
         gl.ARRAY_BUFFER,
         new Float32Array(positions),
@@ -73,11 +89,11 @@ const initBuffers = (gl) => {
     );
     return { 
         position: positionBuffer,
-        positions
+        vertexCount: positions.length / 3
     };
 }
 
-const drawScene = (gl, programInfo, vertexBuffer) => {
+const drawScene = (gl, programInfo, vertexBuffer, delta) => {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.enable(gl.DEPTH_TEST);
@@ -101,9 +117,11 @@ const drawScene = (gl, programInfo, vertexBuffer) => {
         modelViewMatrix,
         [-0.0, 0.0, -6.0] // amount to translate
     );  
+    mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI / 8, [1, 0, 0]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, Math.PI * delta / 4, [0, 1, 0]);
 
     // pull out the positions from the position buffer into the vertexPosition attribute
-    const numComponents = 2;  // pull out 2 values per iteration
+    const numComponents = 3;  // pull out 2 values per iteration
     const normalize = false;  // don't normalize
     const stride = 0;         // how many bytes to get from one set of values to the next
     const offset = 0;         // how many bytes inside the buffer to start from
@@ -133,7 +151,6 @@ const drawScene = (gl, programInfo, vertexBuffer) => {
         modelViewMatrix
     );
 
-    const vertexCount = vertexBuffer.positions.length / 2;
-    gl.drawArrays(gl.LINE_STRIP, offset, vertexCount);
+    gl.drawArrays(gl.LINE_STRIP, offset, vertexBuffer.vertexCount);
 }
 
