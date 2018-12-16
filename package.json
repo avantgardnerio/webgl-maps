@@ -11,5 +11,8 @@
   "license": "ISC",
   "devDependencies": {
     "lr-http-server": "^0.1.5"
+  },
+  "dependencies": {
+    "gl-matrix": "^2.8.1"
   }
 }
