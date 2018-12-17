@@ -178,6 +178,7 @@ const initBuffers = (gl) => {
         normal: normalBuffer,
         textureCoord: textureCoordBuffer,
         indices: indexBuffer,
+        indexCount: indices.length
     };
 };
 
@@ -217,9 +218,7 @@ const loadTexture = (gl, url) => {
     return texture;
 };
 
-const isPowerOf2 = (value) => {
-    return (value & (value - 1)) === 0;
-};
+const isPowerOf2 = (value) => (value & (value - 1)) === 0;
 
 const drawScene = (gl, programInfo, buffers, texture, cubeRotation) => {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -245,61 +244,20 @@ const drawScene = (gl, programInfo, buffers, texture, cubeRotation) => {
     mat4.transpose(normalMatrix, normalMatrix);
 
     // positions
-    {
-        const numComponents = 3;
-        const type = gl.FLOAT;
-        const normalize = false;
-        const stride = 0;
-        const offset = 0;
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-        gl.vertexAttribPointer(
-            programInfo.attribLocations.vertexPosition,
-            numComponents,
-            type,
-            normalize,
-            stride,
-            offset);
-        gl.enableVertexAttribArray(
-            programInfo.attribLocations.vertexPosition);
-    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
+    gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
 
     // texture coords
-    {
-        const numComponents = 2;
-        const type = gl.FLOAT;
-        const normalize = false;
-        const stride = 0;
-        const offset = 0;
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord);
-        gl.vertexAttribPointer(
-            programInfo.attribLocations.textureCoord,
-            numComponents,
-            type,
-            normalize,
-            stride,
-            offset);
-        gl.enableVertexAttribArray(
-            programInfo.attribLocations.textureCoord);
-    }
+    const numComponents = 2;
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord);
+    gl.vertexAttribPointer(programInfo.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
 
     // normals
-    {
-        const numComponents = 3;
-        const type = gl.FLOAT;
-        const normalize = false;
-        const stride = 0;
-        const offset = 0;
-        gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
-        gl.vertexAttribPointer(
-            programInfo.attribLocations.vertexNormal,
-            numComponents,
-            type,
-            normalize,
-            stride,
-            offset);
-        gl.enableVertexAttribArray(
-            programInfo.attribLocations.vertexNormal);
-    }
+    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
+    gl.vertexAttribPointer(programInfo.attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
 
     // indices
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
@@ -312,12 +270,7 @@ const drawScene = (gl, programInfo, buffers, texture, cubeRotation) => {
     gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
     // draw
-    {
-        const vertexCount = 36;
-        const type = gl.UNSIGNED_SHORT;
-        const offset = 0;
-        gl.drawElements(gl.TRIANGLES, vertexCount, type, offset);
-    }
+    gl.drawElements(gl.TRIANGLES, buffers.indexCount, gl.UNSIGNED_SHORT, 0);
 };
 
 const initShaderProgram = (gl, vsSource, fsSource) => {
