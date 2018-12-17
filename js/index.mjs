@@ -40,8 +40,6 @@ onload = async () => {
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 const initBuffers = (gl) => {
     // create 12 vertices of a icosahedron
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     var t = (1.0 + Math.sqrt(5.0)) / 2.0;
     const positions = [
         -1,  t,  0,
@@ -59,11 +57,8 @@ const initBuffers = (gl) => {
         -t,  0, -1,
         -t,  0,  1,
     ];
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
     // normals
-    const normalBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
     const vertexNormals = [
         // Front
         0.0, 0.0, 1.0,
@@ -101,11 +96,8 @@ const initBuffers = (gl) => {
         -1.0, 0.0, 0.0,
         -1.0, 0.0, 0.0
     ];
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
 
     // Texture coordinates
-    const textureCoordBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
     const textureCoordinates = [
         // Front
         0.0, 0.0,
@@ -138,11 +130,8 @@ const initBuffers = (gl) => {
         1.0, 1.0,
         0.0, 1.0,
     ];
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW);
 
     // Face indices
-    const indexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     const indices = [
         // 5 faces around point 0
         0, 11, 5,
@@ -172,6 +161,21 @@ const initBuffers = (gl) => {
         8, 6, 7,
         9, 8, 1,
     ];
+
+    const positionBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+
+    const normalBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+
+    const textureCoordBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW);
+
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
     return {
