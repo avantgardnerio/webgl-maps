@@ -61,11 +61,10 @@ const loadShader = (gl, type, source) => {
     return shader;
 }
 
+// http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 const initBuffers = (gl) => {
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
     const t = (1.0 + Math.sqrt(5.0)) / 2.0;
-    const positions = [
+    const vertices = [
         -1,  t,  0,
         1,  t,  0,
         -1, -t,  0,
@@ -82,14 +81,48 @@ const initBuffers = (gl) => {
         -t,  0,  1,
     ];
 
-    gl.bufferData(
-        gl.ARRAY_BUFFER,
-        new Float32Array(positions),
-        gl.STATIC_DRAW
-    );
+    const indices = [
+        // 5 faces around point 0
+        0, 11, 5,
+        0, 5, 1,
+        0, 1, 7,
+        0, 7, 10,
+        0, 10, 11,
+        
+        // 5 adjacent faces
+        1, 5, 9,
+        5, 11, 4,
+        11, 10, 2,
+        10, 7, 6,
+        7, 1, 8,
+        
+        // 5 faces around point 3
+        3, 9, 4,
+        3, 4, 2,
+        3, 2, 6,
+        3, 6, 8,
+        3, 8, 9,
+        
+        // 5 adjacent faces
+        4, 9, 5,
+        2, 4, 11,
+        6, 2, 10,
+        8, 6, 7,
+        9, 8, 1,
+    ];
+
+    const vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+    const indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.indexBuffer);
+
     return { 
-        position: positionBuffer,
-        vertexCount: positions.length / 3
+        position: vertexBuffer,
+        indices: indexBuffer,
+        vertexCount: vertices.length / 3
     };
 }
 
