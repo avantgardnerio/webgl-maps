@@ -1,2 +1,8 @@
 # node
 node_modules/
+
+# IntelliJ
+*.ipr
+*.iml
+*.iws
+.idea/
