@@ -37,47 +37,27 @@ onload = async () => {
     requestAnimationFrame(render);
 };
 
+// http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 const initBuffers = (gl) => {
-
-    // positions
+    // create 12 vertices of a icosahedron
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    var t = (1.0 + Math.sqrt(5.0)) / 2.0;
     const positions = [
-        // Front face
-        -1.0, -1.0, 1.0,
-        1.0, -1.0, 1.0,
-        1.0, 1.0, 1.0,
-        -1.0, 1.0, 1.0,
+        -1,  t,  0,
+         1,  t,  0,
+        -1, -t,  0,
+         1, -t,  0,
 
-        // Back face
-        -1.0, -1.0, -1.0,
-        -1.0, 1.0, -1.0,
-        1.0, 1.0, -1.0,
-        1.0, -1.0, -1.0,
+         0, -1,  t,
+         0,  1,  t,
+         0, -1, -t,
+         0,  1, -t,
 
-        // Top face
-        -1.0, 1.0, -1.0,
-        -1.0, 1.0, 1.0,
-        1.0, 1.0, 1.0,
-        1.0, 1.0, -1.0,
-
-        // Bottom face
-        -1.0, -1.0, -1.0,
-        1.0, -1.0, -1.0,
-        1.0, -1.0, 1.0,
-        -1.0, -1.0, 1.0,
-
-        // Right face
-        1.0, -1.0, -1.0,
-        1.0, 1.0, -1.0,
-        1.0, 1.0, 1.0,
-        1.0, -1.0, 1.0,
-
-        // Left face
-        -1.0, -1.0, -1.0,
-        -1.0, -1.0, 1.0,
-        -1.0, 1.0, 1.0,
-        -1.0, 1.0, -1.0,
+         t,  0, -1,
+         t,  0,  1,
+        -t,  0, -1,
+        -t,  0,  1,
     ];
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
 
@@ -164,12 +144,33 @@ const initBuffers = (gl) => {
     const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     const indices = [
-        0, 1, 2, 0, 2, 3,    // front
-        4, 5, 6, 4, 6, 7,    // back
-        8, 9, 10, 8, 10, 11,   // top
-        12, 13, 14, 12, 14, 15,   // bottom
-        16, 17, 18, 16, 18, 19,   // right
-        20, 21, 22, 20, 22, 23,   // left
+        // 5 faces around point 0
+        0, 11, 5,
+        0, 5, 1,
+        0, 1, 7,
+        0, 7, 10,
+        0, 10, 11,
+
+        // 5 adjacent faces
+        1, 5, 9,
+        5, 11, 4,
+        11, 10, 2,
+        10, 7, 6,
+        7, 1, 8,
+
+        // 5 faces around point 3
+        3, 9, 4,
+        3, 4, 2,
+        3, 2, 6,
+        3, 6, 8,
+        3, 8, 9,
+
+        // 5 adjacent faces
+        4, 9, 5,
+        2, 4, 11,
+        6, 2, 10,
+        8, 6, 7,
+        9, 8, 1,
     ];
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
@@ -191,20 +192,20 @@ const loadTexture = (gl, url) => {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
 
     // Begin download
-    // const image = new Image();
-    // image.onload = function () {
-    //     gl.bindTexture(gl.TEXTURE_2D, texture);
-    //     gl.texImage2D(gl.TEXTURE_2D, level, internalFormat, srcFormat, srcType, image);
-    //     if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
-    //         gl.generateMipmap(gl.TEXTURE_2D); // Yes, it's a power of 2. Generate mips.
-    //     } else {
-    //         // No, it's not a power of 2. Turn of mips and set wrapping to clamp to edge
-    //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    //         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    //     }
-    // };
-    // image.src = url;
+    const image = new Image();
+    image.onload = function () {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        if (isPowerOf2(image.width) && isPowerOf2(image.height)) {
+            gl.generateMipmap(gl.TEXTURE_2D); // Yes, it's a power of 2. Generate mips.
+        } else {
+            // No, it's not a power of 2. Turn of mips and set wrapping to clamp to edge
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        }
+    };
+    image.src = url;
 
     return texture;
 };
