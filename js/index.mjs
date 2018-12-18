@@ -37,6 +37,13 @@ onload = async () => {
     requestAnimationFrame(render);
 };
 
+const getMidPoint = (a, b) => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+const getLength = (v) => Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+const getNormal = (v) => {
+    const len = getLength(v);
+    return [v[0] / len, v[1] / len, v[2] / len];
+};
+
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 const initBuffers = (gl) => {
     // create 12 vertices of a icosahedron
@@ -59,7 +66,7 @@ const initBuffers = (gl) => {
     ];
 
     // Face indices
-    const indices = [
+    let indices = [
         // 5 faces around point 0
         0, 11, 5,
         0, 5, 1,
@@ -89,78 +96,48 @@ const initBuffers = (gl) => {
         9, 8, 1,
     ];
 
+    // refine mesh
+    // let dirty = true;
+    // while(dirty) {
+    //     const newIndices = [];
+    //     for(let i = 0; i < indices.length; i += 3) {
+    //         const vertIdxA = indices[i+0];
+    //         const vertIdxB = indices[i+1];
+    //         const vertIdxC = indices[i+2];
+    //         const vertPosA = [positions[vertIdxA+0], positions[vertIdxA+1], positions[vertIdxA+2]];
+    //         const vertPosB = [positions[vertIdxB+0], positions[vertIdxB+1], positions[vertIdxB+2]];
+    //         const vertPosC = [positions[vertIdxC+0], positions[vertIdxC+1], positions[vertIdxC+2]];
+    //
+    //         const midPosA = getMidPoint(vertPosA, vertPosB);
+    //         const midPosB = getMidPoint(vertPosB, vertPosC);
+    //         const midPosC = getMidPoint(vertPosC, vertPosA);
+    //         const midIdxA = positions.length; Array.prototype.push.apply(positions, midPosA);
+    //         const midIdxB = positions.length; Array.prototype.push.apply(positions, midPosB);
+    //         const midIdxC = positions.length; Array.prototype.push.apply(positions, midPosC);
+    //
+    //         Array.prototype.push.apply(newIndices, [vertPosA, midIdxA, midIdxC]);
+    //         Array.prototype.push.apply(newIndices, [vertPosB, midIdxB, midIdxA]);
+    //         Array.prototype.push.apply(newIndices, [vertPosC, midIdxC, midIdxB]);
+    //         Array.prototype.push.apply(newIndices, [midIdxA, midIdxB, midIdxC]);
+    //     }
+    //     indices = newIndices;
+    //     dirty = false;
+    // }
+
     // normals
-    const vertexNormals = [
-        // Front
-        0.0, 0.0, 1.0,
-        0.0, 0.0, 1.0,
-        0.0, 0.0, 1.0,
-        0.0, 0.0, 1.0,
-
-        // Back
-        0.0, 0.0, -1.0,
-        0.0, 0.0, -1.0,
-        0.0, 0.0, -1.0,
-        0.0, 0.0, -1.0,
-
-        // Top
-        0.0, 1.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 1.0, 0.0,
-        0.0, 1.0, 0.0,
-
-        // Bottom
-        0.0, -1.0, 0.0,
-        0.0, -1.0, 0.0,
-        0.0, -1.0, 0.0,
-        0.0, -1.0, 0.0,
-
-        // Right
-        1.0, 0.0, 0.0,
-        1.0, 0.0, 0.0,
-        1.0, 0.0, 0.0,
-        1.0, 0.0, 0.0,
-
-        // Left
-        -1.0, 0.0, 0.0,
-        -1.0, 0.0, 0.0,
-        -1.0, 0.0, 0.0,
-        -1.0, 0.0, 0.0
-    ];
+    const vertexNormals = [];
+    for(let i = 0; i < positions.length; i += 3) {
+        const vertPos = [positions[i+0], positions[i+1], positions[i+2]];
+        const norm = getNormal(vertPos);
+        Array.prototype.push.apply(vertexNormals, norm);
+    }
 
     // Texture coordinates
-    const textureCoordinates = [
-        // Front
-        0.0, 0.0,
-        1.0, 0.0,
-        1.0, 1.0,
-        0.0, 1.0,
-        // Back
-        0.0, 0.0,
-        1.0, 0.0,
-        1.0, 1.0,
-        0.0, 1.0,
-        // Top
-        0.0, 0.0,
-        1.0, 0.0,
-        1.0, 1.0,
-        0.0, 1.0,
-        // Bottom
-        0.0, 0.0,
-        1.0, 0.0,
-        1.0, 1.0,
-        0.0, 1.0,
-        // Right
-        0.0, 0.0,
-        1.0, 0.0,
-        1.0, 1.0,
-        0.0, 1.0,
-        // Left
-        0.0, 0.0,
-        1.0, 0.0,
-        1.0, 1.0,
-        0.0, 1.0,
-    ];
+    const textureCoordinates = [];
+    for(let i = 0; i < positions.length; i += 3) {
+        const texCoord = [0, 0]; // TODO: something better
+        Array.prototype.push.apply(textureCoordinates, texCoord);
+    }
 
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -245,7 +222,6 @@ const drawScene = (gl, programInfo, buffers, texture, cubeRotation) => {
     gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
 
     // texture coords
-    const numComponents = 2;
     gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord);
     gl.vertexAttribPointer(programInfo.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
