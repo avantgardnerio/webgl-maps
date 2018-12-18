@@ -3,8 +3,8 @@ onload = async () => {
     const fsSource = await (await fetch(`shader/index.frag`)).text();
 
     const canvas = document.createElement(`canvas`);
-    canvas.setAttribute(`width`, window.innerWidth);
-    canvas.setAttribute(`height`, window.innerHeight);
+    canvas.setAttribute(`width`, `${innerWidth}px`);
+    canvas.setAttribute(`height`, `${innerHeight}px`);
     document.body.appendChild(canvas);
     const gl = canvas.getContext('webgl');
 
@@ -48,7 +48,7 @@ const multiply = (v, f) => [v[0] * f, v[1] * f, v[2] * f];
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 const initBuffers = (gl) => {
     // create 12 vertices of a icosahedron
-    var t = (1.0 + Math.sqrt(5.0)) / 2.0;
+    const t = (1.0 + Math.sqrt(5.0)) / 2.0;
     const positions = [
         ...normalize([-1, t, 0]),
         ...normalize([1, t, 0]),
@@ -101,12 +101,12 @@ const initBuffers = (gl) => {
     for (let detail = 0; detail < 3; detail++) {
         const newIndices = [];
         for (let i = 0; i < indices.length; i += 3) {
-            const vertIdxA = indices[i + 0];
+            const vertIdxA = indices[i];
             const vertIdxB = indices[i + 1];
             const vertIdxC = indices[i + 2];
-            const vertPosA = [positions[vertIdxA * 3 + 0], positions[vertIdxA * 3 + 1], positions[vertIdxA * 3 + 2]];
-            const vertPosB = [positions[vertIdxB * 3 + 0], positions[vertIdxB * 3 + 1], positions[vertIdxB * 3 + 2]];
-            const vertPosC = [positions[vertIdxC * 3 + 0], positions[vertIdxC * 3 + 1], positions[vertIdxC * 3 + 2]];
+            const vertPosA = [positions[vertIdxA * 3], positions[vertIdxA * 3 + 1], positions[vertIdxA * 3 + 2]];
+            const vertPosB = [positions[vertIdxB * 3], positions[vertIdxB * 3 + 1], positions[vertIdxB * 3 + 2]];
+            const vertPosC = [positions[vertIdxC * 3], positions[vertIdxC * 3 + 1], positions[vertIdxC * 3 + 2]];
 
             // TODO: don't store duplicate midPoints
             const midPosA = normalize(getMidPoint(vertPosA, vertPosB));
@@ -130,7 +130,7 @@ const initBuffers = (gl) => {
     // normals
     const vertexNormals = [];
     for (let i = 0; i < positions.length; i += 3) {
-        const vertPos = [positions[i + 0], positions[i + 1], positions[i + 2]];
+        const vertPos = [positions[i], positions[i + 1], positions[i + 2]];
         const norm = normalize(vertPos);
         Array.prototype.push.apply(vertexNormals, norm);
     }
