@@ -127,6 +127,74 @@ const initBuffers = (gl) => {
         indices = newIndices;
     }
 
+    // Texture coordinates
+    const limit = Math.atan(Math.sinh(Math.PI)); // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+    const scale = ((Math.PI / 2 / limit) - 1) * 2 + 1;
+    let min = Number.MAX_VALUE;
+    let max = Number.MIN_VALUE;
+    const textureCoordinates = [];
+
+    for (let i = 0; i < indices.length; i += 3) {
+        const vertIdxA = indices[i + 0];
+        const vertIdxB = indices[i + 1];
+        const vertIdxC = indices[i + 2];
+        const vertPosA = [positions[vertIdxA * 3 + 0], positions[vertIdxA * 3 + 1], positions[vertIdxA * 3 + 2]];
+        const vertPosB = [positions[vertIdxB * 3 + 0], positions[vertIdxB * 3 + 1], positions[vertIdxB * 3 + 2]];
+        const vertPosC = [positions[vertIdxC * 3 + 0], positions[vertIdxC * 3 + 1], positions[vertIdxC * 3 + 2]];
+
+        const lon = [
+            1 - (Math.atan2(vertPosA[2], vertPosA[0]) + Math.PI) / Math.PI / 2.0,
+            1 - (Math.atan2(vertPosB[2], vertPosB[0]) + Math.PI) / Math.PI / 2.0,
+            1 - (Math.atan2(vertPosC[2], vertPosC[0]) + Math.PI) / Math.PI / 2.0
+        ];
+
+        var lowCnt = 0, highCnt = 0;
+
+        lon.forEach(v => {
+            if(v > .9)
+                highCnt++;
+            else if(v < .1)
+                lowCnt++;
+        })
+
+        if(lowCnt > 0 && highCnt > 0) {
+            var lows = [
+                vertPosA, vertPosB, vertPosC
+            ].map(a => a.slice());
+            var highs = [
+                vertPosA, vertPosB, vertPosC
+            ].map(a => a.slice());
+            lon.forEach( (v, idx) => {
+               if(v > .9) {
+                   lows[idx][2] = 0;
+                   lows[idx] = normalize(lows[idx]);
+               }
+               else if(v < .1) {
+                   highs[idx][2] = -0.000000001;
+                   highs[idx] = normalize(highs[idx]);
+               }
+            });
+
+            var lowIdxs = lows.map(l=> {
+                const idx = positions.length / 3;
+                Array.prototype.push.apply(positions, l);
+                return idx;
+            })
+
+            var highIdxs = highs.map(l=> {
+                const idx = positions.length / 3;
+                Array.prototype.push.apply(positions, l);
+                return idx;
+            })
+
+            indices[i] = lowIdxs[0];
+            indices[i+1] = lowIdxs[1];
+            indices[i+2] = lowIdxs[2];
+
+            Array.prototype.push.apply(indices, highIdxs);
+        }
+    }
+
     // normals
     const vertexNormals = [];
     for (let i = 0; i < positions.length; i += 3) {
@@ -135,12 +203,6 @@ const initBuffers = (gl) => {
         Array.prototype.push.apply(vertexNormals, norm);
     }
 
-    // Texture coordinates
-    const limit = Math.atan(Math.sinh(Math.PI)); // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
-    const scale = ((Math.PI / 2 / limit) - 1) * 2 + 1;
-    let min = Number.MAX_VALUE;
-    let max = Number.MIN_VALUE;
-    const textureCoordinates = [];
     for (let i = 0; i < positions.length; i += 3) {
         const vec = [positions[i], positions[i + 1], positions[i + 2]];
         // TODO: use actual mercator projection function here
@@ -223,7 +285,7 @@ const drawScene = (gl, programInfo, buffers, texture, cubeRotation) => {
     mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
     const modelViewMatrix = mat4.create();
-    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -3.0]);
     //mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI/4, [1, 0, 0]);
     mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation * .7, [0, 1, 0]);
 
