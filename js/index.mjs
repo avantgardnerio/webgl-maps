@@ -1,17 +1,15 @@
 import {isPowerOf2} from './utils.mjs';
 import {initBuffers} from './icosahedron.mjs';
+import {initShaderProgram} from './shader.mjs';
 
 onload = async () => {
-    const vsSource = await (await fetch(`shader/index.vert`)).text();
-    const fsSource = await (await fetch(`shader/index.frag`)).text();
-
     const canvas = document.createElement(`canvas`);
     canvas.setAttribute(`width`, `${innerWidth}px`);
     canvas.setAttribute(`height`, `${innerHeight}px`);
     document.body.appendChild(canvas);
     const gl = canvas.getContext('webgl');
 
-    const shader = initShaderProgram(gl, vsSource, fsSource);
+    const shader = await initShaderProgram(gl);
     const icosahedron = initBuffers(gl);
     
     const texture = loadTexture(gl, 'img/osm/0/0/0.png');
@@ -103,44 +101,4 @@ const drawScene = (gl, programInfo, buffers, texture, cubeRotation) => {
 
     // draw
     gl.drawElements(gl.TRIANGLES, buffers.indexCount, gl.UNSIGNED_SHORT, 0);
-};
-
-const initShaderProgram = (gl, vsSource, fsSource) => {
-    const vertexShader = loadShader(gl, gl.VERTEX_SHADER, vsSource);
-    const fragmentShader = loadShader(gl, gl.FRAGMENT_SHADER, fsSource);
-    const shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-        const msg = gl.getProgramInfoLog(shaderProgram);
-        throw new Error(`Unable to initialize the shader program: ${msg}`);
-    }
-    const programInfo = {
-        program: shaderProgram,
-        attribLocations: {
-            vertexPosition: gl.getAttribLocation(shaderProgram, 'aVertexPosition'),
-            vertexNormal: gl.getAttribLocation(shaderProgram, 'aVertexNormal'),
-            textureCoord: gl.getAttribLocation(shaderProgram, 'aTextureCoord'),
-        },
-        uniformLocations: {
-            projectionMatrix: gl.getUniformLocation(shaderProgram, 'uProjectionMatrix'),
-            modelViewMatrix: gl.getUniformLocation(shaderProgram, 'uModelViewMatrix'),
-            normalMatrix: gl.getUniformLocation(shaderProgram, 'uNormalMatrix'),
-            uSampler: gl.getUniformLocation(shaderProgram, 'uSampler'),
-        },
-    };
-    return programInfo;
-};
-
-const loadShader = (gl, type, source) => {
-    const shader = gl.createShader(type);
-    gl.shaderSource(shader, source);
-    gl.compileShader(shader);
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-        gl.deleteShader(shader);
-        const msg = gl.getShaderInfoLog(shader);
-        throw new Error(`An error occurred compiling the shaders: ${msg}`);
-    }
-    return shader;
 };
