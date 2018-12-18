@@ -38,31 +38,32 @@ onload = async () => {
 };
 
 const getMidPoint = (a, b) => [(a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0, (a[2] + b[2]) / 2.0];
-const getLength = (v) => Math.sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+const getLength = (v) => Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
 const normalize = (v) => {
     const len = getLength(v);
     return [v[0] / len, v[1] / len, v[2] / len];
 };
+const multiply = (v, f) => [v[0] * f, v[1] * f, v[2] * f];
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 const initBuffers = (gl) => {
     // create 12 vertices of a icosahedron
     var t = (1.0 + Math.sqrt(5.0)) / 2.0;
     const positions = [
-        -1,  t,  0,
-         1,  t,  0,
-        -1, -t,  0,
-         1, -t,  0,
+        ...normalize([-1, t, 0]),
+        ...normalize([1, t, 0]),
+        ...normalize([-1, -t, 0]),
+        ...normalize([1, -t, 0]),
 
-         0, -1,  t,
-         0,  1,  t,
-         0, -1, -t,
-         0,  1, -t,
+        ...normalize([0, -1, t]),
+        ...normalize([0, 1, t]),
+        ...normalize([0, -1, -t]),
+        ...normalize([0, 1, -t]),
 
-         t,  0, -1,
-         t,  0,  1,
-        -t,  0, -1,
-        -t,  0,  1,
+        ...normalize([t, 0, -1]),
+        ...normalize([t, 0, 1]),
+        ...normalize([-t, 0, -1]),
+        ...normalize([-t, 0, 1]),
     ];
 
     // Face indices
@@ -97,23 +98,26 @@ const initBuffers = (gl) => {
     ];
 
     // refine mesh
-    for(let detail = 0; detail < 1; detail++) {
-        const newIndices = [...indices];
-        for(let i = 0; i < indices.length; i += 3) {
-            const vertIdxA = indices[i+0];
-            const vertIdxB = indices[i+1];
-            const vertIdxC = indices[i+2];
-            const vertPosA = [positions[vertIdxA+0], positions[vertIdxA+1], positions[vertIdxA+2]];
-            const vertPosB = [positions[vertIdxB+0], positions[vertIdxB+1], positions[vertIdxB+2]];
-            const vertPosC = [positions[vertIdxC+0], positions[vertIdxC+1], positions[vertIdxC+2]];
+    for (let detail = 0; detail < 3; detail++) {
+        const newIndices = [];
+        for (let i = 0; i < indices.length; i += 3) {
+            const vertIdxA = indices[i + 0];
+            const vertIdxB = indices[i + 1];
+            const vertIdxC = indices[i + 2];
+            const vertPosA = [positions[vertIdxA * 3 + 0], positions[vertIdxA * 3 + 1], positions[vertIdxA * 3 + 2]];
+            const vertPosB = [positions[vertIdxB * 3 + 0], positions[vertIdxB * 3 + 1], positions[vertIdxB * 3 + 2]];
+            const vertPosC = [positions[vertIdxC * 3 + 0], positions[vertIdxC * 3 + 1], positions[vertIdxC * 3 + 2]];
 
             // TODO: don't store duplicate midPoints
             const midPosA = normalize(getMidPoint(vertPosA, vertPosB));
             const midPosB = normalize(getMidPoint(vertPosB, vertPosC));
             const midPosC = normalize(getMidPoint(vertPosC, vertPosA));
-            const midIdxA = positions.length / 3; Array.prototype.push.apply(positions, midPosA);
-            const midIdxB = positions.length / 3; Array.prototype.push.apply(positions, midPosB);
-            const midIdxC = positions.length / 3; Array.prototype.push.apply(positions, midPosC);
+            const midIdxA = positions.length / 3;
+            Array.prototype.push.apply(positions, midPosA);
+            const midIdxB = positions.length / 3;
+            Array.prototype.push.apply(positions, midPosB);
+            const midIdxC = positions.length / 3;
+            Array.prototype.push.apply(positions, midPosC);
 
             Array.prototype.push.apply(newIndices, [vertIdxA, midIdxA, midIdxC]);
             Array.prototype.push.apply(newIndices, [vertIdxB, midIdxB, midIdxA]);
@@ -125,15 +129,15 @@ const initBuffers = (gl) => {
 
     // normals
     const vertexNormals = [];
-    for(let i = 0; i < positions.length; i += 3) {
-        const vertPos = [positions[i+0], positions[i+1], positions[i+2]];
+    for (let i = 0; i < positions.length; i += 3) {
+        const vertPos = [positions[i + 0], positions[i + 1], positions[i + 2]];
         const norm = normalize(vertPos);
         Array.prototype.push.apply(vertexNormals, norm);
     }
 
     // Texture coordinates
     const textureCoordinates = [];
-    for(let i = 0; i < positions.length; i += 3) {
+    for (let i = 0; i < positions.length; i += 3) {
         const texCoord = [0, 0]; // TODO: something better
         Array.prototype.push.apply(textureCoordinates, texCoord);
     }
