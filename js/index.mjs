@@ -25,7 +25,7 @@ onload = async () => {
     };
 
     const buffers = initBuffers(gl);
-    const texture = loadTexture(gl, 'cubetexture.png');
+    const texture = loadTexture(gl, 'img/osm/0/0/0.png');
     const start = performance.now();
 
     // Draw the scene repeatedly
@@ -136,11 +136,23 @@ const initBuffers = (gl) => {
     }
 
     // Texture coordinates
+    const limit = Math.atan(Math.sinh(Math.PI)); // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
+    const scale = ((Math.PI / 2 / limit) - 1) * 2 + 1;
+    let min = Number.MAX_VALUE;
+    let max = Number.MIN_VALUE;
     const textureCoordinates = [];
     for (let i = 0; i < positions.length; i += 3) {
-        const texCoord = [0, 0]; // TODO: something better
+        const vec = [positions[i], positions[i + 1], positions[i + 2]];
+        // TODO: use actual mercator projection function here
+        const lon = 1 - (Math.atan2(vec[2], vec[0]) + Math.PI) / Math.PI / 2.0;
+        const scaledLat = (Math.acos(vec[1] / 1.0) - Math.PI / 2) * scale;
+        const lat = (scaledLat + Math.PI / 2) / Math.PI;
+        min = Math.min(min, lon);
+        max = Math.max(max, lon);
+        const texCoord = [lon, lat];
         Array.prototype.push.apply(textureCoordinates, texCoord);
     }
+    console.log(`min=${min} max=${max} scale=${scale}`);
 
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -212,7 +224,7 @@ const drawScene = (gl, programInfo, buffers, texture, cubeRotation) => {
 
     const modelViewMatrix = mat4.create();
     mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
-    mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation, [0, 0, 1]);
+    //mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI/4, [1, 0, 0]);
     mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation * .7, [0, 1, 0]);
 
     const normalMatrix = mat4.create();
