@@ -1,4 +1,4 @@
-import {normalize, getMidPoint} from './utils.mjs';
+import {normalize, getMidPoint, isPowerOf2} from './utils.mjs';
 
 onload = async () => {
     const vsSource = await (await fetch(`shader/index.vert`)).text();
@@ -199,8 +199,6 @@ const loadTexture = (gl, url) => {
 
     return texture;
 };
-
-const isPowerOf2 = (value) => (value & (value - 1)) === 0;
 
 const drawScene = (gl, programInfo, buffers, texture, cubeRotation) => {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);

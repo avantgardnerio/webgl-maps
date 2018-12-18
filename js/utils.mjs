@@ -8,6 +8,7 @@ export const multiply = (v, f) => [v[0] * f, v[1] * f, v[2] * f];
 export const sec = (theta) => 1.0 / Math.cos(theta);
 export const deg2rad = (deg) => deg * Math.PI / 180.0;
 export const rad2deg = (rad) => rad * 180.0 / Math.PI;
+export const isPowerOf2 = (value) => (value & (value - 1)) === 0;
 
 // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Pseudo-code
 export const degToTile = (lon_deg, lat_deg, zoom) => {
