@@ -44,6 +44,38 @@ const normalize = (v) => {
     return [v[0] / len, v[1] / len, v[2] / len];
 };
 const multiply = (v, f) => [v[0] * f, v[1] * f, v[2] * f];
+const sec = (theta) => 1.0 / Math.cos(theta);
+const deg2rad = (deg) => deg * Math.PI / 180.0;
+const rad2deg = (rad) => rad * 180.0 / Math.PI;
+
+// https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Pseudo-code
+const degToTile = (lon_deg, lat_deg, zoom) => {
+    const lon_rad = deg2rad(lon_deg);
+    const lat_rad = deg2rad(lat_deg);
+    return radToTile(lon_rad, lat_rad, zoom);
+};
+
+const radToTile = (lon_rad, lat_rad, zoom) => {
+    const lon_deg = rad2deg(lon_rad);
+    const n = Math.pow(2, zoom);
+    const xtile = n * ((lon_deg + 180) / 360);
+    const ytile = n * (1 - (Math.log(Math.tan(lat_rad) + sec(lat_rad)) / Math.PI)) / 2;
+    return [xtile, ytile];
+};
+
+const tileToDeg = (xtile, ytile, zoom) => {
+    const n = Math.pow(2, zoom);
+    const lon_deg = xtile / n * 360.0 - 180.0;
+    const lat_rad = Math.atan(Math.sinh(Math.PI * (-1.0 * ytile / n)));
+    const lat_deg = lat_rad * 180.0 / Math.PI;
+    return [lon_deg, lat_deg];
+};
+
+const tileToRad = (xtile, ytile, zoom) => {
+    const deg = tileToDeg(xtile, ytile, zoom);
+    const rad = [deg2rad(deg[0]), deg2rad(deg[1])];
+    return rad;
+};
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 const initBuffers = (gl) => {
