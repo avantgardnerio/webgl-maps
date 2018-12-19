@@ -1,4 +1,4 @@
-import {normalize, getMidPoint, pos2Ang} from './utils.mjs';
+import {normalize, getMidPoint} from './utils.mjs';
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 export const initBuffers = (gl, xtile, ytile, zoom) => {
@@ -14,9 +14,6 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
             const vertPosA = [positions[vertIdxA * 3], positions[vertIdxA * 3 + 1], positions[vertIdxA * 3 + 2]];
             const vertPosB = [positions[vertIdxB * 3], positions[vertIdxB * 3 + 1], positions[vertIdxB * 3 + 2]];
             const vertPosC = [positions[vertIdxC * 3], positions[vertIdxC * 3 + 1], positions[vertIdxC * 3 + 2]];
-            const vertAngA = pos2Ang(vertPosA);
-            const vertAngB = pos2Ang(vertPosB);
-            const vertAngC = pos2Ang(vertPosC);
 
             // TODO: don't store duplicate midPoints
             const midPosA = normalize(getMidPoint(vertPosA, vertPosB));
