@@ -1,9 +1,12 @@
-import {normalize, getMidPoint} from './utils.mjs';
-import {tileToRad} from './utils.mjs';
+import {normalize, getMidPoint, tileToDeg, pos2Ang, vec2rad} from './utils.mjs';
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
-export const initBuffers = (gl, tilex, tiley, zoom) => {
-    // create 12 vertices of a icosahedron
+export const initBuffers = (gl, xtile, ytile, zoom) => {
+    let nw = tileToDeg(xtile, ytile, zoom);
+    let se = tileToDeg(xtile+1, ytile+1, zoom);
+    console.log(`nw=${nw} se=${se}`);
+    nw = vec2rad(nw);
+    se = vec2rad(se);
 
     // refine mesh
     const positions = [...INITIAL_POSITIONS];
@@ -17,6 +20,17 @@ export const initBuffers = (gl, tilex, tiley, zoom) => {
             const vertPosA = [positions[vertIdxA * 3], positions[vertIdxA * 3 + 1], positions[vertIdxA * 3 + 2]];
             const vertPosB = [positions[vertIdxB * 3], positions[vertIdxB * 3 + 1], positions[vertIdxB * 3 + 2]];
             const vertPosC = [positions[vertIdxC * 3], positions[vertIdxC * 3 + 1], positions[vertIdxC * 3 + 2]];
+            const vertAngA = pos2Ang(vertPosA);
+            const vertAngB = pos2Ang(vertPosB);
+            const vertAngC = pos2Ang(vertPosC);
+            if(
+                (vertAngA[0] < nw[0] || vertAngA[1] < nw[1] || vertAngA[0] > se[0] || vertAngA[1] > se[1]) &&
+                (vertAngB[0] < nw[0] || vertAngB[1] < nw[1] || vertAngB[0] > se[0] || vertAngB[1] > se[1]) &&
+                (vertAngC[0] < nw[0] || vertAngC[1] < nw[1] || vertAngC[0] > se[0] || vertAngC[1] > se[1])
+            ) {
+                console.log(`a=${vertAngA} b=${vertAngB} c=${vertAngC}`);
+                continue;
+            }
 
             // TODO: don't store duplicate midPoints
             const midPosA = normalize(getMidPoint(vertPosA, vertPosB));
@@ -89,6 +103,7 @@ export const initBuffers = (gl, tilex, tiley, zoom) => {
     };
 };
 
+// create 12 vertices of a icosahedron
 const T = (1.0 + Math.sqrt(5.0)) / 2.0;
 const INITIAL_POSITIONS = [
     ...normalize([-1, T, 0]),

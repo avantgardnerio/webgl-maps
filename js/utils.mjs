@@ -8,7 +8,14 @@ export const multiply = (v, f) => [v[0] * f, v[1] * f, v[2] * f];
 export const sec = (theta) => 1.0 / Math.cos(theta);
 export const deg2rad = (deg) => deg * Math.PI / 180.0;
 export const rad2deg = (rad) => rad * 180.0 / Math.PI;
+export const vec2rad = (deg) => [deg2rad(deg[0]), deg2rad(deg[1])];
 export const isPowerOf2 = (value) => (value & (value - 1)) === 0;
+
+export const pos2Ang = (vec) => {
+    const lon = Math.atan2(vec[2], vec[0]);
+    const lat = Math.acos(vec[1] / 1.0) - Math.PI / 2.0;
+    return [lon, lat];
+};
 
 // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Pseudo-code
 export const degToTile = (lon_deg, lat_deg, zoom) => {
@@ -35,6 +42,6 @@ export const tileToDeg = (xtile, ytile, zoom) => {
 
 export const tileToRad = (xtile, ytile, zoom) => {
     const deg = tileToDeg(xtile, ytile, zoom);
-    const rad = [deg2rad(deg[0]), deg2rad(deg[1])];
+    const rad = vec2rad(deg);
     return rad;
 };
