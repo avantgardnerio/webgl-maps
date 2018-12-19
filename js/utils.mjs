@@ -18,30 +18,19 @@ export const pos2Ang = (vec) => {
 };
 
 // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Pseudo-code
-export const degToTile = (lon_deg, lat_deg, zoom) => {
-    const lon_rad = deg2rad(lon_deg);
-    const lat_rad = deg2rad(lat_deg);
-    return radToTile(lon_rad, lat_rad, zoom);
+export const lon2tile = (lon, zoom) => {
+    return (lon + 180) / 360 * Math.pow(2, zoom);
 };
 
-export const radToTile = (lon_rad, lat_rad, zoom) => {
-    const lon_deg = rad2deg(lon_rad);
-    const n = Math.pow(2, zoom);
-    const xtile = n * ((lon_deg + 180) / 360);
-    const ytile = n * (1 - (Math.log(Math.tan(lat_rad) + sec(lat_rad)) / Math.PI)) / 2;
-    return [xtile, ytile];
+export const lat2tile = (lat, zoom) => {
+    return (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
 };
 
-export const tileToDeg = (xtile, ytile, zoom) => {
-    const n = Math.pow(2, zoom);
-    const lon_deg = xtile / n * 360.0 - 180.0;
-    const lat_rad = Math.atan(Math.sinh(Math.PI * (-1.0 * ytile / n)));
-    const lat_deg = lat_rad * 180.0 / Math.PI;
-    return [lon_deg, lat_deg];
+export const tile2lon = (x, z) => {
+    return x / Math.pow(2, z) * 360 - 180;
 };
 
-export const tileToRad = (xtile, ytile, zoom) => {
-    const deg = tileToDeg(xtile, ytile, zoom);
-    const rad = vec2rad(deg);
-    return rad;
+export const tile2lat = (y, z) => {
+    var n = Math.PI - 2 * Math.PI * y / Math.pow(2, z);
+    return 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 };

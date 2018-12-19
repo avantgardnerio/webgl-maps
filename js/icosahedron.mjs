@@ -1,13 +1,7 @@
-import {normalize, getMidPoint, tileToDeg, pos2Ang, vec2rad} from './utils.mjs';
+import {normalize, getMidPoint, pos2Ang} from './utils.mjs';
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 export const initBuffers = (gl, xtile, ytile, zoom) => {
-    let nw = tileToDeg(xtile, ytile, zoom);
-    let se = tileToDeg(xtile+1, ytile+1, zoom);
-    console.log(`nw=${nw} se=${se}`);
-    nw = vec2rad(nw);
-    se = vec2rad(se);
-
     // refine mesh
     const positions = [...INITIAL_POSITIONS];
     let indices = [...INITIAL_INDICES];
@@ -23,14 +17,6 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
             const vertAngA = pos2Ang(vertPosA);
             const vertAngB = pos2Ang(vertPosB);
             const vertAngC = pos2Ang(vertPosC);
-            // if(
-            //     (vertAngA[0] < nw[0] || vertAngA[1] < nw[1] || vertAngA[0] > se[0] || vertAngA[1] > se[1]) &&
-            //     (vertAngB[0] < nw[0] || vertAngB[1] < nw[1] || vertAngB[0] > se[0] || vertAngB[1] > se[1]) &&
-            //     (vertAngC[0] < nw[0] || vertAngC[1] < nw[1] || vertAngC[0] > se[0] || vertAngC[1] > se[1])
-            // ) {
-            //     console.log(`a=${vertAngA} b=${vertAngB} c=${vertAngC}`);
-            //     continue;
-            // }
 
             // TODO: don't store duplicate midPoints
             const midPosA = normalize(getMidPoint(vertPosA, vertPosB));
