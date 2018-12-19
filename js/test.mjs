@@ -40,3 +40,26 @@ test(`tile2lat should convert 1,0`, () => {
     assertEquals(expected, actual);
 });
 
+test(`tile2lon should convert 0,1`, () => {
+    const expected = -180;
+    const actual = tile2lon(0, 1);
+    assertEquals(expected, actual);
+});
+
+test(`tile2lon should convert 1,1`, () => {
+    const expected = 0;
+    const actual = tile2lon(1, 1);
+    assertEquals(expected, actual);
+});
+
+test(`tile2lat should convert 0,1`, () => {
+    const expected = 85.0511287798066;
+    const actual = tile2lat(0, 1);
+    assertEquals(expected, actual);
+});
+
+test(`tile2lat should convert 1,1`, () => {
+    const expected = 0;
+    const actual = tile2lat(1, 1);
+    assertEquals(expected, actual);
+});
