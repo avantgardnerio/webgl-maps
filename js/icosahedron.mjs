@@ -23,14 +23,14 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
             const vertAngA = pos2Ang(vertPosA);
             const vertAngB = pos2Ang(vertPosB);
             const vertAngC = pos2Ang(vertPosC);
-            if(
-                (vertAngA[0] < nw[0] || vertAngA[1] < nw[1] || vertAngA[0] > se[0] || vertAngA[1] > se[1]) &&
-                (vertAngB[0] < nw[0] || vertAngB[1] < nw[1] || vertAngB[0] > se[0] || vertAngB[1] > se[1]) &&
-                (vertAngC[0] < nw[0] || vertAngC[1] < nw[1] || vertAngC[0] > se[0] || vertAngC[1] > se[1])
-            ) {
-                console.log(`a=${vertAngA} b=${vertAngB} c=${vertAngC}`);
-                continue;
-            }
+            // if(
+            //     (vertAngA[0] < nw[0] || vertAngA[1] < nw[1] || vertAngA[0] > se[0] || vertAngA[1] > se[1]) &&
+            //     (vertAngB[0] < nw[0] || vertAngB[1] < nw[1] || vertAngB[0] > se[0] || vertAngB[1] > se[1]) &&
+            //     (vertAngC[0] < nw[0] || vertAngC[1] < nw[1] || vertAngC[0] > se[0] || vertAngC[1] > se[1])
+            // ) {
+            //     console.log(`a=${vertAngA} b=${vertAngB} c=${vertAngC}`);
+            //     continue;
+            // }
 
             // TODO: don't store duplicate midPoints
             const midPosA = normalize(getMidPoint(vertPosA, vertPosB));
