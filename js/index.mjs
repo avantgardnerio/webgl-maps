@@ -10,7 +10,7 @@ onload = async () => {
     const gl = canvas.getContext('webgl');
 
     const shader = await initShaderProgram(gl);
-    const icosahedron = initBuffers(gl);
+    const icosahedron = initBuffers(gl, 0, 0, 1);
     
     const texture = loadTexture(gl, 'img/osm/0/0/0.png');
     const start = performance.now();

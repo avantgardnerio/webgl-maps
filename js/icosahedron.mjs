@@ -4,25 +4,9 @@ import {tileToRad} from './utils.mjs';
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 export const initBuffers = (gl, tilex, tiley, zoom) => {
     // create 12 vertices of a icosahedron
-    const t = (1.0 + Math.sqrt(5.0)) / 2.0;
-    const positions = [
-        ...normalize([-1, t, 0]),
-        ...normalize([1, t, 0]),
-        ...normalize([-1, -t, 0]),
-        ...normalize([1, -t, 0]),
-
-        ...normalize([0, -1, t]),
-        ...normalize([0, 1, t]),
-        ...normalize([0, -1, -t]),
-        ...normalize([0, 1, -t]),
-
-        ...normalize([t, 0, -1]),
-        ...normalize([t, 0, 1]),
-        ...normalize([-t, 0, -1]),
-        ...normalize([-t, 0, 1]),
-    ];
 
     // refine mesh
+    const positions = [...INITIAL_POSITIONS];
     let indices = [...INITIAL_INDICES];
     for (let detail = 0; detail < 3; detail++) {
         const newIndices = [];
@@ -104,6 +88,24 @@ export const initBuffers = (gl, tilex, tiley, zoom) => {
         indexCount: indices.length
     };
 };
+
+const T = (1.0 + Math.sqrt(5.0)) / 2.0;
+const INITIAL_POSITIONS = [
+    ...normalize([-1, T, 0]),
+    ...normalize([1, T, 0]),
+    ...normalize([-1, -T, 0]),
+    ...normalize([1, -T, 0]),
+
+    ...normalize([0, -1, T]),
+    ...normalize([0, 1, T]),
+    ...normalize([0, -1, -T]),
+    ...normalize([0, 1, -T]),
+
+    ...normalize([T, 0, -1]),
+    ...normalize([T, 0, 1]),
+    ...normalize([-T, 0, -1]),
+    ...normalize([-T, 0, 1]),
+];
 
 // Face indices
 const INITIAL_INDICES = [
