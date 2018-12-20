@@ -1,6 +1,5 @@
 import {initBuffers} from './icosahedron.mjs';
 import {initShaderProgram} from './shader.mjs';
-import {loadTexture} from './texture.mjs';
 
 onload = async () => {
     const canvas = document.createElement(`canvas`);
@@ -10,21 +9,29 @@ onload = async () => {
     const gl = canvas.getContext('webgl');
 
     const shader = await initShaderProgram(gl);
-    const icosahedron = initBuffers(gl, 0, 0, 1);
-    
-    const texture = loadTexture(gl, 'img/osm/0/0/0.png');
+    const tiles = [
+        initBuffers(gl, 0, 1, 2),
+        initBuffers(gl, 0, 2, 2),
+        initBuffers(gl, 1, 1, 2),
+        initBuffers(gl, 1, 2, 2),
+        initBuffers(gl, 2, 1, 2),
+        initBuffers(gl, 2, 2, 2),
+        initBuffers(gl, 3, 1, 2),
+        initBuffers(gl, 3, 2, 2),
+        ];
+
     const start = performance.now();
 
     // Draw the scene repeatedly
     const render = (now) => {
         const deltaTime = (now - start) / 1000;
-        drawScene(gl, shader, icosahedron, texture, deltaTime);
+        drawScene(gl, shader, tiles, deltaTime);
         requestAnimationFrame(render);
     };
     requestAnimationFrame(render);
 };
 
-const drawScene = (gl, programInfo, buffers, texture, cubeRotation) => {
+const drawScene = (gl, programInfo, models, cubeRotation) => {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.enable(gl.DEPTH_TEST);
@@ -39,7 +46,7 @@ const drawScene = (gl, programInfo, buffers, texture, cubeRotation) => {
     mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
     const modelViewMatrix = mat4.create();
-    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -3.0]);
     //mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI/4, [1, 0, 0]);
     mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation * .7, [0, 1, 0]);
 
@@ -48,30 +55,32 @@ const drawScene = (gl, programInfo, buffers, texture, cubeRotation) => {
     mat4.transpose(normalMatrix, normalMatrix);
 
     // positions
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.position);
-    gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
+    for(let model of models) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, model.position);
+        gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
 
-    // texture coords
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.textureCoord);
-    gl.vertexAttribPointer(programInfo.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
+        // texture coords
+        gl.bindBuffer(gl.ARRAY_BUFFER, model.textureCoord);
+        gl.vertexAttribPointer(programInfo.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
 
-    // normals
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffers.normal);
-    gl.vertexAttribPointer(programInfo.attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0);
-    gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
+        // normals
+        gl.bindBuffer(gl.ARRAY_BUFFER, model.normal);
+        gl.vertexAttribPointer(programInfo.attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
 
-    // indices
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffers.indices);
-    gl.useProgram(programInfo.program);
-    gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
-    gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
-    gl.uniformMatrix4fv(programInfo.uniformLocations.normalMatrix, false, normalMatrix);
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
+        // indices
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.indices);
+        gl.useProgram(programInfo.program);
+        gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
+        gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
+        gl.uniformMatrix4fv(programInfo.uniformLocations.normalMatrix, false, normalMatrix);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, model.texture);
+        gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
-    // draw
-    gl.drawElements(gl.TRIANGLES, buffers.indexCount, gl.UNSIGNED_SHORT, 0);
+        // draw
+        gl.drawElements(gl.TRIANGLES, model.indexCount, gl.UNSIGNED_SHORT, 0);
+    }
 };

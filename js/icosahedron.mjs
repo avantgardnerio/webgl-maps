@@ -1,11 +1,31 @@
-import {normalize, getMidPoint} from './utils.mjs';
+import {normalize, getMidPoint, tile2lat, tile2lon, lonLat2Pos, pos2LonLat} from './utils.mjs';
+import {loadTexture} from './texture.mjs';
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 export const initBuffers = (gl, xtile, ytile, zoom) => {
+    const n = tile2lat(ytile, zoom);
+    const e = tile2lon(xtile + 1, zoom);
+    const s = tile2lat(ytile + 1, zoom);
+    const w = tile2lon(xtile, zoom);
+    console.log(`generating tile [${w},${n}] - [${e},${s}]`);
+
+    // Load texture
+    const texture = loadTexture(gl, `img/osm/${zoom}/${xtile}/${ytile}.png`);
+
+    // create mesh
+    const positions = [
+        ...normalize(lonLat2Pos([w, n])),
+        ...normalize(lonLat2Pos([e, n])),
+        ...normalize(lonLat2Pos([e, s])),
+        ...normalize(lonLat2Pos([w, s])),
+    ];
+    let indices = [
+        0, 1, 2,
+        3, 0, 2,
+    ];
+
     // refine mesh
-    const positions = [...INITIAL_POSITIONS];
-    let indices = [...INITIAL_INDICES];
-    for (let detail = 0; detail < 3; detail++) {
+    for (let detail = 0; detail < 4; detail++) {
         const newIndices = [];
         for (let i = 0; i < indices.length; i += 3) {
             const vertIdxA = indices[i];
@@ -43,23 +63,15 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
     }
 
     // Texture coordinates
-    const limit = Math.atan(Math.sinh(Math.PI)); // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
-    const scale = ((Math.PI / 2 / limit) - 1) * 2 + 1;
-    let min = Number.MAX_VALUE;
-    let max = Number.MIN_VALUE;
     const textureCoordinates = [];
     for (let i = 0; i < positions.length; i += 3) {
         const vec = [positions[i], positions[i + 1], positions[i + 2]];
-        // TODO: use actual mercator projection function here
-        const lon = 1 - (Math.atan2(vec[2], vec[0]) + Math.PI) / Math.PI / 2.0;
-        const scaledLat = (Math.acos(vec[1] / 1.0) - Math.PI / 2) * scale;
-        const lat = (scaledLat + Math.PI / 2) / Math.PI;
-        min = Math.min(min, lon);
-        max = Math.max(max, lon);
-        const texCoord = [lon, lat];
+        const lonLat = pos2LonLat(vec);
+        const u = (lonLat[0] - w) / (e - w);
+        const v = (n - lonLat[1]) / (n - s);
+        const texCoord = [u, v];
         Array.prototype.push.apply(textureCoordinates, texCoord);
     }
-    console.log(`min=${min} max=${max} scale=${scale}`);
 
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -82,56 +94,7 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
         normal: normalBuffer,
         textureCoord: textureCoordBuffer,
         indices: indexBuffer,
-        indexCount: indices.length
+        indexCount: indices.length,
+        texture
     };
 };
-
-// create 12 vertices of a icosahedron
-const T = (1.0 + Math.sqrt(5.0)) / 2.0;
-const INITIAL_POSITIONS = [
-    ...normalize([-1, T, 0]),
-    ...normalize([1, T, 0]),
-    ...normalize([-1, -T, 0]),
-    ...normalize([1, -T, 0]),
-
-    ...normalize([0, -1, T]),
-    ...normalize([0, 1, T]),
-    ...normalize([0, -1, -T]),
-    ...normalize([0, 1, -T]),
-
-    ...normalize([T, 0, -1]),
-    ...normalize([T, 0, 1]),
-    ...normalize([-T, 0, -1]),
-    ...normalize([-T, 0, 1]),
-];
-
-// Face indices
-const INITIAL_INDICES = [
-    // 5 faces around point 0
-    0, 11, 5,
-    0, 5, 1,
-    0, 1, 7,
-    0, 7, 10,
-    0, 10, 11,
-
-    // 5 adjacent faces
-    1, 5, 9,
-    5, 11, 4,
-    11, 10, 2,
-    10, 7, 6,
-    7, 1, 8,
-
-    // 5 faces around point 3
-    3, 9, 4,
-    3, 4, 2,
-    3, 2, 6,
-    3, 6, 8,
-    3, 8, 9,
-
-    // 5 adjacent faces
-    4, 9, 5,
-    2, 4, 11,
-    6, 2, 10,
-    8, 6, 7,
-    9, 8, 1,
-];
