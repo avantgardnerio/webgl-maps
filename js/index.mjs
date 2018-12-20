@@ -9,15 +9,23 @@ onload = async () => {
     const gl = canvas.getContext('webgl');
 
     const shader = await initShaderProgram(gl);
-    const tileA = initBuffers(gl, 0, 1, 2);
-    const tileB = initBuffers(gl, 1, 2, 2);
+    const tiles = [
+        initBuffers(gl, 0, 1, 2),
+        initBuffers(gl, 0, 2, 2),
+        initBuffers(gl, 1, 1, 2),
+        initBuffers(gl, 1, 2, 2),
+        initBuffers(gl, 2, 1, 2),
+        initBuffers(gl, 2, 2, 2),
+        initBuffers(gl, 3, 1, 2),
+        initBuffers(gl, 3, 2, 2),
+        ];
 
     const start = performance.now();
 
     // Draw the scene repeatedly
     const render = (now) => {
         const deltaTime = (now - start) / 1000;
-        drawScene(gl, shader, [tileA, tileB], deltaTime);
+        drawScene(gl, shader, tiles, deltaTime);
         requestAnimationFrame(render);
     };
     requestAnimationFrame(render);
@@ -38,7 +46,7 @@ const drawScene = (gl, programInfo, models, cubeRotation) => {
     mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
     const modelViewMatrix = mat4.create();
-    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -6.0]);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -3.0]);
     //mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI/4, [1, 0, 0]);
     mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation * .7, [0, 1, 0]);
 

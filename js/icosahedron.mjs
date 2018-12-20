@@ -24,7 +24,7 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
     ];
 
     // refine mesh
-    for (let detail = 0; detail < 3; detail++) {
+    for (let detail = 0; detail < 4; detail++) {
         const newIndices = [];
         for (let i = 0; i < indices.length; i += 3) {
             const vertIdxA = indices[i];
