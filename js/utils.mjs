@@ -20,7 +20,7 @@ export const pos2LonLat = (vec) => {
 export const lonLat2Pos = (vec) => {
     const lon = deg2rad(vec[0] + 90);
     const lat = deg2rad(vec[1]);
-    const x = Math.cos(lon) * Math.cos(lat);
+    const x = -Math.cos(lon) * Math.cos(lat);
     const y = Math.sin(lat);
     const z = Math.sin(lon) * Math.cos(lat);
     return [x, y, z];

@@ -7,6 +7,7 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
     const e = tile2lon(xtile + 1, zoom);
     const s = tile2lat(ytile + 1, zoom);
     const w = tile2lon(xtile, zoom);
+    console.log(`generating tile [${w},${n}] - [${e},${s}]`);
 
     // Load texture
     const texture = loadTexture(gl, `img/osm/${zoom}/${xtile}/${ytile}.png`);
