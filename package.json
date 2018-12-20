@@ -2,10 +2,10 @@
   "name": "webgl-maps",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "index.mjs",
   "scripts": {
-    "test": "node --experimental-modules js/test.mjs",
-    "start": "lr-http-server ."
+    "test": "node --experimental-modules test.mjs",
+    "start": "nodemon --experimental-modules index.mjs"
   },
   "author": "",
   "license": "ISC",
@@ -13,6 +13,10 @@
     "lr-http-server": "^0.1.5"
   },
   "dependencies": {
-    "gl-matrix": "^2.8.1"
+    "express": "^4.16.4",
+    "gl-matrix": "^2.8.1",
+    "isomorphic-fetch": "^2.2.1",
+    "node-fetch": "^2.3.0",
+    "nodemon": "^1.18.9"
   }
 }

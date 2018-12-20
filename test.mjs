@@ -1,5 +1,5 @@
-import {tile2lon, tile2lat, pos2LonLat} from './utils.mjs';
-import {lonLat2Pos} from "./utils";
+import {tile2lon, tile2lat, pos2LonLat} from './public/js/utils.mjs';
+import {lonLat2Pos} from "./public/js/utils";
 
 const assert = (msg, condition) => {
     if (!condition) {
