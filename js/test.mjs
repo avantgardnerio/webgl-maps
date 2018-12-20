@@ -1,16 +1,24 @@
 import {tile2lon, tile2lat, pos2LonLat} from './utils.mjs';
+import {lonLat2Pos} from "./utils";
 
 const assert = (msg, condition) => {
-    if(!condition) {
+    if (!condition) {
         throw new Error(msg);
     }
 };
 
+const approxEqual = (a, b, e = 0.0001) => {
+    if (!isNaN(a) && !isNaN(b)) {
+        return Math.abs(a - b) < e;
+    }
+    return a === b;
+};
+
 const assertEquals = (expected, actual) => {
-    if(Array.isArray(expected) && Array.isArray(actual)) {
+    if (Array.isArray(expected) && Array.isArray(actual)) {
         const msg = `[${actual}] did not equal [${expected}]`;
         assert(msg, expected.length === actual.length);
-        [...Array(expected.length).keys()].forEach(i => assert(msg, expected[i] === actual[i]));
+        [...Array(expected.length).keys()].forEach(i => assert(msg, approxEqual(expected[i], actual[i])));
         return true;
     }
     assert(`${actual} did not equal ${expected}`, expected === actual);
@@ -74,32 +82,50 @@ test(`tile2lat should convert 1,1`, () => {
     assertEquals(expected, actual);
 });
 
-test(`pos2LatLon should convert 0,0,1`, () => {
+test(`pos2LonLat should convert 0,0,1`, () => {
     const expected = [0, 0];
     const actual = pos2LonLat([0, 0, 1]);
     assertEquals(expected, actual);
 });
 
-test(`pos2LatLon should convert 1,0,0`, () => {
+test(`pos2LonLat should convert 1,0,0`, () => {
     const expected = [90, 0];
     const actual = pos2LonLat([1, 0, 0]);
     assertEquals(expected, actual);
 });
 
-test(`pos2LatLon should convert -1,0,0`, () => {
+test(`pos2LonLat should convert -1,0,0`, () => {
     const expected = [-90, 0];
     const actual = pos2LonLat([-1, 0, 0]);
     assertEquals(expected, actual);
 });
 
-test(`pos2LatLon should convert 0,-1,0`, () => {
+test(`pos2LonLat should convert 0,-1,0`, () => {
     const expected = [0, -90];
     const actual = pos2LonLat([0, -1, 0]);
     assertEquals(expected, actual);
 });
 
-test(`pos2LatLon should convert 0,1,0`, () => {
+test(`pos2LonLat should convert 0,1,0`, () => {
     const expected = [0, 90];
     const actual = pos2LonLat([0, 1, 0]);
+    assertEquals(expected, actual);
+});
+
+test(`lonLat2Pos should convert 0, 0`, () => {
+    const expected = [0, 0, 1];
+    const actual = lonLat2Pos([0, 0]);
+    assertEquals(expected, actual);
+});
+
+test(`lonLat2Pos should convert 0, 90`, () => {
+    const expected = [0, 1, 0];
+    const actual = lonLat2Pos([0, 90]);
+    assertEquals(expected, actual);
+});
+
+test(`lonLat2Pos should convert 0, -90`, () => {
+    const expected = [0, -1, 0];
+    const actual = lonLat2Pos([0, -90]);
     assertEquals(expected, actual);
 });

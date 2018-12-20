@@ -1,10 +1,23 @@
-import {normalize, getMidPoint} from './utils.mjs';
+import {normalize, getMidPoint, tile2lat, tile2lon, lonLat2Pos} from './utils.mjs';
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 export const initBuffers = (gl, xtile, ytile, zoom) => {
+    const n = tile2lat(ytile, zoom);
+    const e = tile2lon(xtile + 1, zoom);
+    const s = tile2lat(ytile + 1, zoom);
+    const w = tile2lon(xtile, zoom);
+
     // refine mesh
-    const positions = [...INITIAL_POSITIONS];
-    let indices = [...INITIAL_INDICES];
+    const positions = [
+        ...normalize(lonLat2Pos([w, n])),
+        ...normalize(lonLat2Pos([e, n])),
+        ...normalize(lonLat2Pos([e, s])),
+        ...normalize(lonLat2Pos([w, s])),
+    ];
+    let indices = [
+        0, 1, 2,
+        3, 0, 2,
+    ];
     for (let detail = 0; detail < 3; detail++) {
         const newIndices = [];
         for (let i = 0; i < indices.length; i += 3) {
