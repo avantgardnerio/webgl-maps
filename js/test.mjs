@@ -1,4 +1,4 @@
-import {tile2lon, tile2lat, pos2LatLon} from './utils.mjs';
+import {tile2lon, tile2lat, pos2LonLat} from './utils.mjs';
 
 const assert = (msg, condition) => {
     if(!condition) {
@@ -76,30 +76,30 @@ test(`tile2lat should convert 1,1`, () => {
 
 test(`pos2LatLon should convert 0,0,1`, () => {
     const expected = [0, 0];
-    const actual = pos2LatLon([0, 0, 1]);
+    const actual = pos2LonLat([0, 0, 1]);
     assertEquals(expected, actual);
 });
 
 test(`pos2LatLon should convert 1,0,0`, () => {
-    const expected = [0, 90];
-    const actual = pos2LatLon([1, 0, 0]);
+    const expected = [90, 0];
+    const actual = pos2LonLat([1, 0, 0]);
     assertEquals(expected, actual);
 });
 
 test(`pos2LatLon should convert -1,0,0`, () => {
-    const expected = [0, -90];
-    const actual = pos2LatLon([-1, 0, 0]);
+    const expected = [-90, 0];
+    const actual = pos2LonLat([-1, 0, 0]);
     assertEquals(expected, actual);
 });
 
 test(`pos2LatLon should convert 0,-1,0`, () => {
-    const expected = [-90, 0];
-    const actual = pos2LatLon([0, -1, 0]);
+    const expected = [0, -90];
+    const actual = pos2LonLat([0, -1, 0]);
     assertEquals(expected, actual);
 });
 
 test(`pos2LatLon should convert 0,1,0`, () => {
-    const expected = [90, 0];
-    const actual = pos2LatLon([0, 1, 0]);
+    const expected = [0, 90];
+    const actual = pos2LonLat([0, 1, 0]);
     assertEquals(expected, actual);
 });

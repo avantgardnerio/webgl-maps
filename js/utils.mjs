@@ -10,10 +10,10 @@ export const deg2rad = (deg) => deg * Math.PI / 180.0;
 export const rad2deg = (rad) => rad * 180.0 / Math.PI;
 export const isPowerOf2 = (value) => (value & (value - 1)) === 0;
 
-export const pos2LatLon = (vec) => {
+export const pos2LonLat = (vec) => {
     const lon = Math.atan2(vec[0], vec[2]) * 180 / Math.PI;
     const lat = Math.acos(-vec[1] / 1.0) * 180 / Math.PI - 90;
-    return [lat, lon];
+    return [lon, lat];
 };
 
 // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames#Pseudo-code
@@ -25,11 +25,11 @@ export const lat2tile = (lat, zoom) => {
     return (1 - Math.log(Math.tan(lat * Math.PI / 180) + 1 / Math.cos(lat * Math.PI / 180)) / Math.PI) / 2 * Math.pow(2, zoom);
 };
 
-export const tile2lon = (x, z) => {
-    return x / Math.pow(2, z) * 360 - 180;
+export const tile2lon = (x, zoom) => {
+    return x / Math.pow(2, zoom) * 360 - 180;
 };
 
-export const tile2lat = (y, z) => {
-    const n = Math.PI - 2 * Math.PI * y / Math.pow(2, z);
+export const tile2lat = (y, zoom) => {
+    const n = Math.PI - 2 * Math.PI * y / Math.pow(2, zoom);
     return 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 };
