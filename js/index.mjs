@@ -1,4 +1,4 @@
-import {initBuffers} from './icosahedron.mjs';
+import {initBuffers} from './world.mjs';
 import {initShaderProgram} from './shader.mjs';
 import {deg2rad} from "./utils.mjs";
 

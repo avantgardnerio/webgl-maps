@@ -12,46 +12,31 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
     // Load texture
     const texture = loadTexture(gl, `img/osm/${zoom}/${xtile}/${ytile}.png`);
 
-    // create mesh
-    const positions = [
-        ...normalize(lonLat2Pos([w, n])),
-        ...normalize(lonLat2Pos([e, n])),
-        ...normalize(lonLat2Pos([e, s])),
-        ...normalize(lonLat2Pos([w, s])),
-    ];
-    let indices = [
-        0, 1, 2,
-        3, 0, 2,
-    ];
-
-    // refine mesh
-    for (let detail = 0; detail < 4; detail++) {
-        const newIndices = [];
-        for (let i = 0; i < indices.length; i += 3) {
-            const vertIdxA = indices[i];
-            const vertIdxB = indices[i + 1];
-            const vertIdxC = indices[i + 2];
-            const vertPosA = [positions[vertIdxA * 3], positions[vertIdxA * 3 + 1], positions[vertIdxA * 3 + 2]];
-            const vertPosB = [positions[vertIdxB * 3], positions[vertIdxB * 3 + 1], positions[vertIdxB * 3 + 2]];
-            const vertPosC = [positions[vertIdxC * 3], positions[vertIdxC * 3 + 1], positions[vertIdxC * 3 + 2]];
-
-            // TODO: don't store duplicate midPoints
-            const midPosA = normalize(getMidPoint(vertPosA, vertPosB));
-            const midPosB = normalize(getMidPoint(vertPosB, vertPosC));
-            const midPosC = normalize(getMidPoint(vertPosC, vertPosA));
-            const midIdxA = positions.length / 3;
-            Array.prototype.push.apply(positions, midPosA);
-            const midIdxB = positions.length / 3;
-            Array.prototype.push.apply(positions, midPosB);
-            const midIdxC = positions.length / 3;
-            Array.prototype.push.apply(positions, midPosC);
-
-            Array.prototype.push.apply(newIndices, [vertIdxA, midIdxA, midIdxC]);
-            Array.prototype.push.apply(newIndices, [vertIdxB, midIdxB, midIdxA]);
-            Array.prototype.push.apply(newIndices, [vertIdxC, midIdxC, midIdxB]);
-            Array.prototype.push.apply(newIndices, [midIdxA, midIdxB, midIdxC]);
+    // positions
+    const positions = [];
+    const resolution = 16;
+    const yInc = (n - s) / resolution;
+    const xInc = (e - w) / resolution;
+    for(let y = 0; y <= resolution; y++) {
+        for(let x = 0; x <= resolution; x++) {
+            const lon = x * xInc + w;
+            const lat = y * yInc + s;
+            const pos = lonLat2Pos([lon, lat]);
+            positions.push(...normalize(pos));
         }
-        indices = newIndices;
+    }
+
+    // indices
+    let indices = [];
+    for(let y = 1; y <= resolution; y++) {
+        for(let x = 1; x <= resolution; x++) {
+            const sw = (y - 1) * (resolution+1) + (x - 1);
+            const se = (y - 1) * (resolution+1) + x;
+            const nw = y * (resolution+1) + (x - 1);
+            const ne = y * (resolution+1) + x;
+            indices.push(sw, nw, se);
+            indices.push(se, nw, ne);
+        }
     }
 
     // normals
