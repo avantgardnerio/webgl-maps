@@ -1,4 +1,4 @@
-import {normalize, getMidPoint, tile2lat, tile2lon, lonLat2Pos} from './utils.mjs';
+import {normalize, getMidPoint, tile2lat, tile2lon, lonLat2Pos, pos2LonLat} from './utils.mjs';
 import {loadTexture} from './texture.mjs';
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
@@ -62,16 +62,13 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
     }
 
     // Texture coordinates
-    const limit = Math.atan(Math.sinh(Math.PI)); // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
-    const scale = ((Math.PI / 2 / limit) - 1) * 2 + 1;
     const textureCoordinates = [];
     for (let i = 0; i < positions.length; i += 3) {
         const vec = [positions[i], positions[i + 1], positions[i + 2]];
-        // TODO: use actual mercator projection function here
-        const lon = 1 - (Math.atan2(vec[2], vec[0]) + Math.PI) / Math.PI / 2.0;
-        const scaledLat = (Math.acos(vec[1] / 1.0) - Math.PI / 2) * scale;
-        const lat = (scaledLat + Math.PI / 2) / Math.PI;
-        const texCoord = [lon, lat];
+        const lonLat = pos2LonLat(vec);
+        const u = (lonLat[0] - w) / (e - w);
+        const v = (n - lonLat[1]) / (n - s);
+        const texCoord = [u, v];
         Array.prototype.push.apply(textureCoordinates, texCoord);
     }
 
