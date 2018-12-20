@@ -1,4 +1,5 @@
 import {normalize, getMidPoint, tile2lat, tile2lon, lonLat2Pos} from './utils.mjs';
+import {loadTexture} from './texture.mjs';
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 export const initBuffers = (gl, xtile, ytile, zoom) => {
@@ -7,7 +8,10 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
     const s = tile2lat(ytile + 1, zoom);
     const w = tile2lon(xtile, zoom);
 
-    // refine mesh
+    // Load texture
+    const texture = loadTexture(gl, `img/osm/${zoom}/${xtile}/${ytile}.png`);
+
+    // create mesh
     const positions = [
         ...normalize(lonLat2Pos([w, n])),
         ...normalize(lonLat2Pos([e, n])),
@@ -18,6 +22,8 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
         0, 1, 2,
         3, 0, 2,
     ];
+
+    // refine mesh
     for (let detail = 0; detail < 3; detail++) {
         const newIndices = [];
         for (let i = 0; i < indices.length; i += 3) {
@@ -58,8 +64,6 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
     // Texture coordinates
     const limit = Math.atan(Math.sinh(Math.PI)); // https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames
     const scale = ((Math.PI / 2 / limit) - 1) * 2 + 1;
-    let min = Number.MAX_VALUE;
-    let max = Number.MIN_VALUE;
     const textureCoordinates = [];
     for (let i = 0; i < positions.length; i += 3) {
         const vec = [positions[i], positions[i + 1], positions[i + 2]];
@@ -67,12 +71,9 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
         const lon = 1 - (Math.atan2(vec[2], vec[0]) + Math.PI) / Math.PI / 2.0;
         const scaledLat = (Math.acos(vec[1] / 1.0) - Math.PI / 2) * scale;
         const lat = (scaledLat + Math.PI / 2) / Math.PI;
-        min = Math.min(min, lon);
-        max = Math.max(max, lon);
         const texCoord = [lon, lat];
         Array.prototype.push.apply(textureCoordinates, texCoord);
     }
-    console.log(`min=${min} max=${max} scale=${scale}`);
 
     const positionBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
@@ -95,6 +96,7 @@ export const initBuffers = (gl, xtile, ytile, zoom) => {
         normal: normalBuffer,
         textureCoord: textureCoordBuffer,
         indices: indexBuffer,
-        indexCount: indices.length
+        indexCount: indices.length,
+        texture
     };
 };
