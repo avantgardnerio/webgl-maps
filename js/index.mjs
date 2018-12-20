@@ -1,5 +1,6 @@
 import {initBuffers} from './icosahedron.mjs';
 import {initShaderProgram} from './shader.mjs';
+import {deg2rad} from "./utils.mjs";
 
 onload = async () => {
     const canvas = document.createElement(`canvas`);
@@ -18,20 +19,34 @@ onload = async () => {
         initBuffers(gl, 2, 2, 2),
         initBuffers(gl, 3, 1, 2),
         initBuffers(gl, 3, 2, 2),
-        ];
+    ];
 
-    const start = performance.now();
+    let lat = 0;
+    let lon = 0;
+    let alt = 6;
+    const keys = [];
+    onkeydown = (e) => keys[e.key] = true;
+    onkeyup = (e) => keys[e.key] = false;
 
     // Draw the scene repeatedly
+    const start = performance.now();
+    let last = start;
     const render = (now) => {
-        const deltaTime = (now - start) / 1000;
-        drawScene(gl, shader, tiles, deltaTime);
+        const deltaTime = (now - last) / 1000;
+        if(keys['w'] === true) alt = Math.max(1, alt - deltaTime);
+        if(keys['s'] === true) alt = Math.max(1, alt + deltaTime);
+        if(keys['ArrowUp'] === true) lat += deltaTime * 10;
+        if(keys['ArrowDown'] === true) lat -= deltaTime * 10;
+        if(keys['ArrowLeft'] === true) lon += deltaTime * 10;
+        if(keys['ArrowRight'] === true) lon -= deltaTime * 10;
+        drawScene(gl, shader, tiles, lon, lat, alt);
         requestAnimationFrame(render);
+        last = now;
     };
     requestAnimationFrame(render);
 };
 
-const drawScene = (gl, programInfo, models, cubeRotation) => {
+const drawScene = (gl, programInfo, models, lon, lat, alt) => {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.enable(gl.DEPTH_TEST);
@@ -46,16 +61,16 @@ const drawScene = (gl, programInfo, models, cubeRotation) => {
     mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
 
     const modelViewMatrix = mat4.create();
-    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -3.0]);
-    //mat4.rotate(modelViewMatrix, modelViewMatrix, -Math.PI/4, [1, 0, 0]);
-    mat4.rotate(modelViewMatrix, modelViewMatrix, cubeRotation * .7, [0, 1, 0]);
+    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -alt]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, deg2rad(lat), [1, 0, 0]);
+    mat4.rotate(modelViewMatrix, modelViewMatrix, deg2rad(lon), [0, 1, 0]);
 
     const normalMatrix = mat4.create();
     mat4.invert(normalMatrix, modelViewMatrix);
     mat4.transpose(normalMatrix, normalMatrix);
 
     // positions
-    for(let model of models) {
+    for (let model of models) {
         gl.bindBuffer(gl.ARRAY_BUFFER, model.position);
         gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
