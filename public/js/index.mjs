@@ -1,7 +1,10 @@
 import {initBuffers} from './world.mjs';
 import {initShaderProgram} from './shader.mjs';
-import {deg2rad, lonLat2Pos, tile2lat, tile2lon} from "./utils.mjs";
+import {deg2rad, lonLat2Pos, tile2lat, tile2lon, getBounds} from "./utils.mjs";
 
+const TILE_SIZE = 256;
+
+let first = true;
 onload = async () => {
     const canvas = document.createElement(`canvas`);
     canvas.setAttribute(`width`, `${innerWidth}px`);
@@ -14,7 +17,7 @@ onload = async () => {
 
     let lat = 0;
     let lon = 0;
-    let alt = 6;
+    let alt = 3;
     const keys = [];
     onkeydown = (e) => keys[e.key] = true;
     onkeyup = (e) => keys[e.key] = false;
@@ -57,8 +60,18 @@ onload = async () => {
             const ne = vec3.transformMat4([0,0,0], lonLat2Pos([e, n]), mat);
             const se = vec3.transformMat4([0,0,0], lonLat2Pos([e, s]), mat);
             const sw = vec3.transformMat4([0,0,0], lonLat2Pos([w, s]), mat);
+            const bounds = getBounds([nw,ne,se,sw]);
+            bounds[0] *= gl.canvas.clientWidth / 2;
+            bounds[1] *= gl.canvas.clientHeight / 2;
+            bounds[2] *= gl.canvas.clientWidth / 2;
+            bounds[3] *= gl.canvas.clientHeight / 2;
+            const width = Math.round(bounds[2] - bounds[0]);
+            const height = Math.round(bounds[3] - bounds[1]);
+            if(first) {
+                console.log(`zoom=${zoom} ${width}x${height} ${bounds}`);
+            }
 
-            if(zoom < 2) {
+            if(zoom < 18 && (zoom < 2 || width > TILE_SIZE || height > TILE_SIZE)) {
                 getTiles(zoom + 1, tileX * 2, tileY * 2, mat, tiles);
                 getTiles(zoom + 1, tileX * 2 + 1, tileY * 2, mat, tiles);
                 getTiles(zoom + 1, tileX * 2, tileY * 2 + 1, mat, tiles);
@@ -73,8 +86,9 @@ onload = async () => {
 
             return tiles;
         };
-        const mat = mat4.multiply(mat4.create(), modelViewMatrix, projectionMatrix);
+        const mat = mat4.multiply(mat4.create(), projectionMatrix, modelViewMatrix);
         const tiles = getTiles(0, 0, 0, mat);
+        first = false;
 
         // rendering
         drawScene(gl, shader, tiles, projectionMatrix, modelViewMatrix);

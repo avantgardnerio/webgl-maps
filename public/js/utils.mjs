@@ -10,6 +10,19 @@ export const deg2rad = (deg) => deg * Math.PI / 180.0;
 export const rad2deg = (rad) => rad * 180.0 / Math.PI;
 export const isPowerOf2 = (value) => (value & (value - 1)) === 0;
 export const centroid = (a, b, c) => [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3];
+export const getBounds = (vecs) => {
+    return vecs.reduce((acc, cur) => {
+            acc[0] = Math.min(acc[0], cur[0]);
+            acc[1] = Math.min(acc[1], cur[1]);
+            acc[2] = Math.max(acc[2], cur[0]);
+            acc[3] = Math.max(acc[3], cur[1]);
+            return acc;
+        }, [Number.POSITIVE_INFINITY,
+            Number.POSITIVE_INFINITY,
+            Number.NEGATIVE_INFINITY,
+            Number.NEGATIVE_INFINITY]
+    );
+}
 
 export const pos2LonLat = (vec) => {
     const lon = Math.atan2(vec[0], vec[2]) * 180 / Math.PI;
