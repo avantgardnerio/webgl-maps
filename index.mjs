@@ -17,4 +17,5 @@ app.get(/\/img\/osm\/([0-9]*)\/([0-9]*)\/([0-9]*)\.png/, async (req, res) => {
     res.end(Buffer.from(buffer))
 });
 
-app.listen(3000);
+const port = parseInt(process.env.PORT || 3000);
+app.listen(port);
