@@ -2,15 +2,15 @@ import {normalize, getMidPoint, tile2lat, tile2lon, lonLat2Pos, pos2LonLat} from
 import {loadTexture} from './texture.mjs';
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
-export const initBuffers = (gl, xtile, ytile, zoom) => {
-    const n = tile2lat(ytile, zoom);
-    const e = tile2lon(xtile + 1, zoom);
-    const s = tile2lat(ytile + 1, zoom);
-    const w = tile2lon(xtile, zoom);
+export const initBuffers = (gl, tileX, tileY, zoom) => {
+    const n = tile2lat(tileY, zoom);
+    const e = tile2lon(tileX + 1, zoom);
+    const s = tile2lat(tileY + 1, zoom);
+    const w = tile2lon(tileX, zoom);
     console.log(`generating tile [${w},${n}] - [${e},${s}]`);
 
     // Load texture
-    const texture = loadTexture(gl, `img/osm/${zoom}/${xtile}/${ytile}.png`);
+    const texture = loadTexture(gl, `img/osm/${zoom}/${tileX}/${tileY}.png`);
 
     // positions
     const positions = [];

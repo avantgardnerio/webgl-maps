@@ -1,6 +1,6 @@
 import {initBuffers} from './world.mjs';
 import {initShaderProgram} from './shader.mjs';
-import {deg2rad} from "./utils.mjs";
+import {deg2rad, lonLat2Pos, tile2lat, tile2lon} from "./utils.mjs";
 
 onload = async () => {
     const canvas = document.createElement(`canvas`);
@@ -10,16 +10,7 @@ onload = async () => {
     const gl = canvas.getContext('webgl');
 
     const shader = await initShaderProgram(gl);
-    const tiles = [
-        initBuffers(gl, 0, 1, 2),
-        initBuffers(gl, 0, 2, 2),
-        initBuffers(gl, 1, 1, 2),
-        initBuffers(gl, 1, 2, 2),
-        initBuffers(gl, 2, 1, 2),
-        initBuffers(gl, 2, 2, 2),
-        initBuffers(gl, 3, 1, 2),
-        initBuffers(gl, 3, 2, 2),
-    ];
+    const tileCache = {};
 
     let lat = 0;
     let lon = 0;
@@ -33,37 +24,72 @@ onload = async () => {
     let last = start;
     const render = (now) => {
         const deltaTime = (now - last) / 1000;
+
+        // controls
         if(keys['w'] === true) alt = Math.max(1, alt - deltaTime);
         if(keys['s'] === true) alt = Math.max(1, alt + deltaTime);
         if(keys['ArrowUp'] === true) lat += deltaTime * 10;
         if(keys['ArrowDown'] === true) lat -= deltaTime * 10;
         if(keys['ArrowLeft'] === true) lon += deltaTime * 10;
         if(keys['ArrowRight'] === true) lon -= deltaTime * 10;
-        drawScene(gl, shader, tiles, lon, lat, alt);
+
+        // perspective
+        const fieldOfView = 45 * Math.PI / 180; // Our field of view is 45 degrees
+        const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight; // width/height ratio that matches the display size
+        const zNear = 0.1; // we only want to see objects between 0.1 units
+        const zFar = 100.0; // and 100 units away from the camera
+        const projectionMatrix = mat4.create();
+        mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
+
+        // model position
+        const modelViewMatrix = mat4.create();
+        mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -alt]);
+        mat4.rotate(modelViewMatrix, modelViewMatrix, deg2rad(lat), [1, 0, 0]);
+        mat4.rotate(modelViewMatrix, modelViewMatrix, deg2rad(lon), [0, 1, 0]);
+
+        // tiles
+        const getTiles = (zoom, tileX, tileY, mat, tiles = []) => {
+            const n = tile2lat(tileY, zoom);
+            const e = tile2lon(tileX + 1, zoom);
+            const s = tile2lat(tileY + 1, zoom);
+            const w = tile2lon(tileX, zoom);
+            const nw = vec3.transformMat4([0,0,0], lonLat2Pos([w, n]), mat);
+            const ne = vec3.transformMat4([0,0,0], lonLat2Pos([e, n]), mat);
+            const se = vec3.transformMat4([0,0,0], lonLat2Pos([e, s]), mat);
+            const sw = vec3.transformMat4([0,0,0], lonLat2Pos([w, s]), mat);
+
+            if(zoom < 2) {
+                getTiles(zoom + 1, tileX * 2, tileY * 2, mat, tiles);
+                getTiles(zoom + 1, tileX * 2 + 1, tileY * 2, mat, tiles);
+                getTiles(zoom + 1, tileX * 2, tileY * 2 + 1, mat, tiles);
+                getTiles(zoom + 1, tileX * 2 + 1, tileY * 2 + 1, mat, tiles);
+            } else {
+                const key = `${zoom}/${tileX}/${tileY}`;
+                if(tileCache[key] === undefined) {
+                    tileCache[key] = initBuffers(gl, tileX, tileY, zoom);
+                }
+                tiles.push(tileCache[key]);
+            }
+
+            return tiles;
+        };
+        const mat = mat4.multiply(mat4.create(), modelViewMatrix, projectionMatrix);
+        const tiles = getTiles(0, 0, 0, mat);
+
+        // rendering
+        drawScene(gl, shader, tiles, projectionMatrix, modelViewMatrix);
         requestAnimationFrame(render);
         last = now;
     };
     requestAnimationFrame(render);
 };
 
-const drawScene = (gl, programInfo, models, lon, lat, alt) => {
+const drawScene = (gl, programInfo, models, projectionMatrix, modelViewMatrix) => {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    const fieldOfView = 45 * Math.PI / 180; // Our field of view is 45 degrees
-    const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight; // width/height ratio that matches the display size
-    const zNear = 0.1; // we only want to see objects between 0.1 units
-    const zFar = 100.0; // and 100 units away from the camera
-    const projectionMatrix = mat4.create();
-    mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
-
-    const modelViewMatrix = mat4.create();
-    mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -alt]);
-    mat4.rotate(modelViewMatrix, modelViewMatrix, deg2rad(lat), [1, 0, 0]);
-    mat4.rotate(modelViewMatrix, modelViewMatrix, deg2rad(lon), [0, 1, 0]);
 
     const normalMatrix = mat4.create();
     mat4.invert(normalMatrix, modelViewMatrix);
