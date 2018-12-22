@@ -1,6 +1,6 @@
 import {initBuffers} from './world.mjs';
 import {initDefaultShader, initDrawingShader} from './shader.mjs';
-import {deg2rad, lonLat2Pos, tile2lat, tile2lon, getBounds} from "./utils.mjs";
+import {deg2rad, lonLat2Pos, tile2lat, tile2lon, getBounds, intersectBounds} from "./utils.mjs";
 
 const TILE_SIZE = 256;
 
@@ -42,6 +42,7 @@ onload = async () => {
         0, 1, 1, 0, 0, 0,
     ]), gl.STATIC_DRAW);
     const canvasTexture = gl.createTexture();
+    const screenBounds = [cnvWidth/4, cnvHeight/4, cnvWidth - cnvWidth/4, cnvHeight - cnvHeight/4];
 
     // shaders
     const defaultShader = await initDefaultShader(gl);
@@ -67,7 +68,7 @@ onload = async () => {
         ctx.fillText("Hello World", 10, 50);
 
         // controls
-        if (keys['w'] === true) alt = Math.max(1, alt - deltaTime);
+        if (keys['w'] === true) alt = Math.max(1.001, alt - deltaTime);
         if (keys['s'] === true) alt = Math.max(1, alt + deltaTime);
         if (keys['ArrowUp'] === true) lat += deltaTime * 10;
         if (keys['ArrowDown'] === true) lat -= deltaTime * 10;
@@ -77,7 +78,7 @@ onload = async () => {
         // perspective
         const fieldOfView = 45 * Math.PI / 180; // Our field of view is 45 degrees
         const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight; // width/height ratio that matches the display size
-        const zNear = 0.1; // we only want to see objects between 0.1 units
+        const zNear = 0.001;
         const zFar = 100.0; // and 100 units away from the camera
         const projectionMatrix = mat4.create();
         mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
@@ -98,11 +99,12 @@ onload = async () => {
             const ne = vec3.transformMat4([0, 0, 0], lonLat2Pos([e, n]), mat);
             const se = vec3.transformMat4([0, 0, 0], lonLat2Pos([e, s]), mat);
             const sw = vec3.transformMat4([0, 0, 0], lonLat2Pos([w, s]), mat);
-            const bounds = getBounds([nw, ne, se, sw]);
+            let bounds = getBounds([nw, ne, se, sw]);
             bounds[0] = bounds[0] * cnvWidth / 2 + cnvWidth / 2;
             bounds[1] = bounds[1] * cnvHeight / 2 + cnvHeight / 2;
             bounds[2] = bounds[2] * cnvWidth / 2 + cnvWidth / 2;
             bounds[3] = bounds[3] * cnvHeight / 2 + cnvHeight / 2;
+            bounds = intersectBounds(screenBounds, bounds);
             ctx.strokeStyle = "white";
             ctx.strokeWidth = 2;
             ctx.beginPath();
