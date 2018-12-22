@@ -118,7 +118,7 @@ onload = async () => {
                 console.log(`zoom=${zoom} ${width}x${height} ${bounds}`);
             }
 
-            if (zoom < 18 && (zoom < 2 /*|| width > TILE_SIZE || height > TILE_SIZE*/)) {
+            if (zoom < 18 && (zoom < 2 || width > TILE_SIZE || height > TILE_SIZE)) {
                 // TODO: also ensure on screen
                 getTiles(zoom + 1, tileX * 2, tileY * 2, mat, tiles);
                 getTiles(zoom + 1, tileX * 2 + 1, tileY * 2, mat, tiles);
