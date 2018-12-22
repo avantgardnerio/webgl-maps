@@ -1,20 +1,63 @@
 import {initBuffers} from './world.mjs';
-import {initShaderProgram} from './shader.mjs';
+import {initDefaultShader, initDrawingShader} from './shader.mjs';
 import {deg2rad, lonLat2Pos, tile2lat, tile2lon, getBounds} from "./utils.mjs";
 
 const TILE_SIZE = 256;
 
+function getPowerOfTwo(value, pow) {
+    var pow = pow || 1;
+    while(pow<value) {
+        pow *= 2;
+    }
+    return pow;
+}
+
 let first = true;
 onload = async () => {
+    // 3d webgl canvas
     const canvas = document.createElement(`canvas`);
     canvas.setAttribute(`width`, `${innerWidth}px`);
     canvas.setAttribute(`height`, `${innerHeight}px`);
     document.body.appendChild(canvas);
     const gl = canvas.getContext('webgl');
 
-    const shader = await initShaderProgram(gl);
+    // 2d drawing canvas
+    const cnv2d = document.createElement(`canvas`);
+    cnv2d.setAttribute(`width`, `${getPowerOfTwo(innerWidth)}px`);
+    cnv2d.setAttribute(`height`, `${getPowerOfTwo(innerHeight)}px`);
+    const ctx = cnv2d.getContext('2d');
+    ctx.fillStyle = `rgba(0, 0, 0, 0)`;
+    ctx.fillRect(0, 0, innerWidth, innerHeight);
+    ctx.font = "24px monospace";
+    ctx.fillStyle = `white`;
+    ctx.fillText("Hello World", 10, 50);
+    const quadVertBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadVertBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        -1.0, 1.0, 1.0, 1.0, 1.0, -1.0,
+        -1.0, 1.0, 1.0, -1.0, -1.0, -1.0
+    ]), gl.STATIC_DRAW);
+    const quadTexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, quadTexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        0, 1, 1, 1, 1, 0,
+        0, 1, 1, 0, 0, 0,
+    ]), gl.STATIC_DRAW);
+    const canvasTexture = gl.createTexture();
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cnv2d);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+    gl.generateMipmap(gl.TEXTURE_2D);
+    gl.bindTexture(gl.TEXTURE_2D, null);
+
+    // shaders
+    const defaultShader = await initDefaultShader(gl);
+    const drawingShader = await initDrawingShader(gl);
     const tileCache = {};
 
+    // state
     let lat = 0;
     let lon = 0;
     let alt = 3;
@@ -29,12 +72,12 @@ onload = async () => {
         const deltaTime = (now - last) / 1000;
 
         // controls
-        if(keys['w'] === true) alt = Math.max(1, alt - deltaTime);
-        if(keys['s'] === true) alt = Math.max(1, alt + deltaTime);
-        if(keys['ArrowUp'] === true) lat += deltaTime * 10;
-        if(keys['ArrowDown'] === true) lat -= deltaTime * 10;
-        if(keys['ArrowLeft'] === true) lon += deltaTime * 10;
-        if(keys['ArrowRight'] === true) lon -= deltaTime * 10;
+        if (keys['w'] === true) alt = Math.max(1, alt - deltaTime);
+        if (keys['s'] === true) alt = Math.max(1, alt + deltaTime);
+        if (keys['ArrowUp'] === true) lat += deltaTime * 10;
+        if (keys['ArrowDown'] === true) lat -= deltaTime * 10;
+        if (keys['ArrowLeft'] === true) lon += deltaTime * 10;
+        if (keys['ArrowRight'] === true) lon -= deltaTime * 10;
 
         // perspective
         const fieldOfView = 45 * Math.PI / 180; // Our field of view is 45 degrees
@@ -56,22 +99,22 @@ onload = async () => {
             const e = tile2lon(tileX + 1, zoom);
             const s = tile2lat(tileY + 1, zoom);
             const w = tile2lon(tileX, zoom);
-            const nw = vec3.transformMat4([0,0,0], lonLat2Pos([w, n]), mat);
-            const ne = vec3.transformMat4([0,0,0], lonLat2Pos([e, n]), mat);
-            const se = vec3.transformMat4([0,0,0], lonLat2Pos([e, s]), mat);
-            const sw = vec3.transformMat4([0,0,0], lonLat2Pos([w, s]), mat);
-            const bounds = getBounds([nw,ne,se,sw]);
+            const nw = vec3.transformMat4([0, 0, 0], lonLat2Pos([w, n]), mat);
+            const ne = vec3.transformMat4([0, 0, 0], lonLat2Pos([e, n]), mat);
+            const se = vec3.transformMat4([0, 0, 0], lonLat2Pos([e, s]), mat);
+            const sw = vec3.transformMat4([0, 0, 0], lonLat2Pos([w, s]), mat);
+            const bounds = getBounds([nw, ne, se, sw]);
             bounds[0] *= gl.canvas.clientWidth / 2;
             bounds[1] *= gl.canvas.clientHeight / 2;
             bounds[2] *= gl.canvas.clientWidth / 2;
             bounds[3] *= gl.canvas.clientHeight / 2;
             const width = Math.round(bounds[2] - bounds[0]);
             const height = Math.round(bounds[3] - bounds[1]);
-            if(first) {
+            if (first) {
                 console.log(`zoom=${zoom} ${width}x${height} ${bounds}`);
             }
 
-            if(zoom < 18 && (zoom < 2 || width > TILE_SIZE || height > TILE_SIZE)) {
+            if (zoom < 18 && (zoom < 2 /*|| width > TILE_SIZE || height > TILE_SIZE*/)) {
                 // TODO: also ensure on screen
                 getTiles(zoom + 1, tileX * 2, tileY * 2, mat, tiles);
                 getTiles(zoom + 1, tileX * 2 + 1, tileY * 2, mat, tiles);
@@ -79,7 +122,7 @@ onload = async () => {
                 getTiles(zoom + 1, tileX * 2 + 1, tileY * 2 + 1, mat, tiles);
             } else {
                 const key = `${zoom}/${tileX}/${tileY}`;
-                if(tileCache[key] === undefined) {
+                if (tileCache[key] === undefined) {
                     tileCache[key] = initBuffers(gl, tileX, tileY, zoom);
                 }
                 tiles.push(tileCache[key]);
@@ -92,7 +135,24 @@ onload = async () => {
         first = false;
 
         // rendering
-        drawScene(gl, shader, tiles, projectionMatrix, modelViewMatrix);
+        drawScene(gl, defaultShader, tiles, projectionMatrix, modelViewMatrix);
+
+        // 2d overlay
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+        gl.enable(gl.BLEND);
+        gl.disable(gl.DEPTH_TEST);
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadVertBuffer);
+        gl.vertexAttribPointer(drawingShader.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(drawingShader.attribLocations.vertexPosition);
+        gl.bindBuffer(gl.ARRAY_BUFFER, quadTexBuffer);
+        gl.vertexAttribPointer(drawingShader.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(drawingShader.attribLocations.textureCoord);
+        gl.useProgram(drawingShader.program);
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
+        gl.uniform1i(drawingShader.samplerUniform, 0);
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
         requestAnimationFrame(render);
         last = now;
     };
