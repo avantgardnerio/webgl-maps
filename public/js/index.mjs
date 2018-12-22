@@ -23,14 +23,12 @@ onload = async () => {
 
     // 2d drawing canvas
     const cnv2d = document.createElement(`canvas`);
-    cnv2d.setAttribute(`width`, `${getPowerOfTwo(innerWidth)}px`);
-    cnv2d.setAttribute(`height`, `${getPowerOfTwo(innerHeight)}px`);
+    const cnvWidth = getPowerOfTwo(innerWidth);
+    const cnvHeight = getPowerOfTwo(innerHeight);
+    cnv2d.setAttribute(`width`, `${cnvWidth}px`);
+    cnv2d.setAttribute(`height`, `${cnvHeight}px`);
     const ctx = cnv2d.getContext('2d');
-    ctx.fillStyle = `rgba(0, 0, 0, 0)`;
-    ctx.fillRect(0, 0, innerWidth, innerHeight);
     ctx.font = "24px monospace";
-    ctx.fillStyle = `white`;
-    ctx.fillText("Hello World", 10, 50);
     const quadVertBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, quadVertBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
@@ -44,13 +42,6 @@ onload = async () => {
         0, 1, 1, 0, 0, 0,
     ]), gl.STATIC_DRAW);
     const canvasTexture = gl.createTexture();
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cnv2d);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-    gl.generateMipmap(gl.TEXTURE_2D);
-    gl.bindTexture(gl.TEXTURE_2D, null);
 
     // shaders
     const defaultShader = await initDefaultShader(gl);
@@ -70,6 +61,10 @@ onload = async () => {
     let last = start;
     const render = (now) => {
         const deltaTime = (now - last) / 1000;
+        ctx.fillStyle = `rgba(1, 0, 0, 1)`;
+        ctx.clearRect(0, 0, cnvWidth, cnvHeight);
+        ctx.fillStyle = `white`;
+        ctx.fillText("Hello World", 10, 50);
 
         // controls
         if (keys['w'] === true) alt = Math.max(1, alt - deltaTime);
@@ -104,10 +99,19 @@ onload = async () => {
             const se = vec3.transformMat4([0, 0, 0], lonLat2Pos([e, s]), mat);
             const sw = vec3.transformMat4([0, 0, 0], lonLat2Pos([w, s]), mat);
             const bounds = getBounds([nw, ne, se, sw]);
-            bounds[0] *= gl.canvas.clientWidth / 2;
-            bounds[1] *= gl.canvas.clientHeight / 2;
-            bounds[2] *= gl.canvas.clientWidth / 2;
-            bounds[3] *= gl.canvas.clientHeight / 2;
+            bounds[0] = bounds[0] * cnvWidth / 2 + cnvWidth / 2;
+            bounds[1] = bounds[1] * cnvHeight / 2 + cnvHeight / 2;
+            bounds[2] = bounds[2] * cnvWidth / 2 + cnvWidth / 2;
+            bounds[3] = bounds[3] * cnvHeight / 2 + cnvHeight / 2;
+            ctx.strokeStyle = "white";
+            ctx.strokeWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(bounds[0], bounds[1]);
+            ctx.lineTo(bounds[2], bounds[1]);
+            ctx.lineTo(bounds[2], bounds[3]);
+            ctx.lineTo(bounds[0], bounds[3]);
+            ctx.lineTo(bounds[0], bounds[1]);
+            ctx.stroke();
             const width = Math.round(bounds[2] - bounds[0]);
             const height = Math.round(bounds[3] - bounds[1]);
             if (first) {
@@ -138,6 +142,13 @@ onload = async () => {
         drawScene(gl, defaultShader, tiles, projectionMatrix, modelViewMatrix);
 
         // 2d overlay
+        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+        gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cnv2d);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
+        gl.generateMipmap(gl.TEXTURE_2D);
+        gl.bindTexture(gl.TEXTURE_2D, null);
         gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
         gl.enable(gl.BLEND);
         gl.disable(gl.DEPTH_TEST);
