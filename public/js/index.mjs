@@ -64,21 +64,19 @@ onload = async () => {
         const deltaTime = (now - last) / 1000;
         ctx.fillStyle = `rgba(1, 0, 0, 1)`;
         ctx.clearRect(0, 0, cnvWidth, cnvHeight);
-        ctx.fillStyle = `white`;
-        ctx.fillText("Hello World", 10, 50);
 
         // controls
-        if (keys['w'] === true) alt = Math.max(1.001, alt - deltaTime);
-        if (keys['s'] === true) alt = Math.max(1, alt + deltaTime);
-        if (keys['ArrowUp'] === true) lat += deltaTime * 10;
-        if (keys['ArrowDown'] === true) lat -= deltaTime * 10;
-        if (keys['ArrowLeft'] === true) lon += deltaTime * 10;
-        if (keys['ArrowRight'] === true) lon -= deltaTime * 10;
+        if (keys['w'] === true) alt = Math.max(1.0002, alt - deltaTime / 10);
+        if (keys['s'] === true) alt = Math.max(1, alt + deltaTime / 10);
+        if (keys['ArrowUp'] === true) lat += deltaTime;
+        if (keys['ArrowDown'] === true) lat -= deltaTime;
+        if (keys['ArrowLeft'] === true) lon += deltaTime;
+        if (keys['ArrowRight'] === true) lon -= deltaTime;
 
         // perspective
         const fieldOfView = 45 * Math.PI / 180; // Our field of view is 45 degrees
         const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight; // width/height ratio that matches the display size
-        const zNear = 0.001;
+        const zNear = 0.0001;
         const zFar = 100.0; // and 100 units away from the camera
         const projectionMatrix = mat4.create();
         mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
@@ -90,7 +88,9 @@ onload = async () => {
         mat4.rotate(modelViewMatrix, modelViewMatrix, deg2rad(lon), [0, 1, 0]);
 
         // tiles
-        const getTiles = (zoom, tileX, tileY, mat, tiles = []) => {
+        let maxZoom = 0;
+        const getTiles = (zoom, tileX, tileY, mat, tiles) => {
+            maxZoom = Math.max(maxZoom, zoom);
             const n = tile2lat(tileY, zoom);
             const e = tile2lon(tileX + 1, zoom);
             const s = tile2lat(tileY + 1, zoom);
@@ -120,30 +120,41 @@ onload = async () => {
                 console.log(`zoom=${zoom} ${width}x${height} ${bounds}`);
             }
 
-            if (zoom < 18 && (zoom < 2 || width > TILE_SIZE || height > TILE_SIZE)) {
-                // TODO: also ensure on screen
-                getTiles(zoom + 1, tileX * 2, tileY * 2, mat, tiles);
-                getTiles(zoom + 1, tileX * 2 + 1, tileY * 2, mat, tiles);
-                getTiles(zoom + 1, tileX * 2, tileY * 2 + 1, mat, tiles);
-                getTiles(zoom + 1, tileX * 2 + 1, tileY * 2 + 1, mat, tiles);
-            } else {
-                const key = `${zoom}/${tileX}/${tileY}`;
-                if (tileCache[key] === undefined) {
-                    tileCache[key] = initBuffers(gl, tileX, tileY, zoom);
+            if (zoom < 18 && (zoom < 2 || (width > TILE_SIZE && height > 5) || (height > TILE_SIZE && width > 5))) {
+                let loaded = true;
+                loaded &= getTiles(zoom + 1, tileX * 2, tileY * 2, mat, tiles);
+                loaded &= getTiles(zoom + 1, tileX * 2 + 1, tileY * 2, mat, tiles);
+                loaded &= getTiles(zoom + 1, tileX * 2, tileY * 2 + 1, mat, tiles);
+                loaded &= getTiles(zoom + 1, tileX * 2 + 1, tileY * 2 + 1, mat, tiles);
+                if(loaded) {
+                    return true;
                 }
-                tiles.push(tileCache[key]);
             }
 
-            return tiles;
+            const key = `${zoom}/${tileX}/${tileY}`;
+            if (tileCache[key] === undefined) {
+                tileCache[key] = initBuffers(gl, tileX, tileY, zoom);
+            }
+            if(tileCache[key].texture.loaded) {
+                tiles.push(tileCache[key]);
+                return true;
+            }
+
+            return false;
         };
         const mat = mat4.multiply(mat4.create(), projectionMatrix, modelViewMatrix);
-        const tiles = getTiles(0, 0, 0, mat);
+        const tiles = [];
+        getTiles(0, 0, 0, mat, tiles);
         first = false;
 
         // rendering
         drawScene(gl, defaultShader, tiles, projectionMatrix, modelViewMatrix);
 
         // 2d overlay
+        ctx.fillStyle = `white`;
+        ctx.fillText(`lon: ${lon}`, 10, 50);
+        ctx.fillText(`lat: ${lat}`, 10, 75);
+        ctx.fillText(`zoom: ${maxZoom}`, 10, 100);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cnv2d);
@@ -206,7 +217,7 @@ const drawScene = (gl, programInfo, models, projectionMatrix, modelViewMatrix) =
         gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
         gl.uniformMatrix4fv(programInfo.uniformLocations.normalMatrix, false, normalMatrix);
         gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, model.texture);
+        gl.bindTexture(gl.TEXTURE_2D, model.texture.texture);
         gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
 
         // draw

@@ -9,6 +9,11 @@ export const loadTexture = (gl, url) => {
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixel);
 
     // Begin download
+    const result = {
+        texture,
+        url,
+        loaded: false
+    };
     const image = new Image();
     image.onload = function () {
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
@@ -22,9 +27,10 @@ export const loadTexture = (gl, url) => {
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
         // }
+        result.loaded = true;
     };
     image.src = url;
 
-    return texture;
+    return result;
 };
 
