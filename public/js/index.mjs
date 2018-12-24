@@ -7,7 +7,8 @@ import {
     getBounds,
     intersectBounds,
     normalize, pos2LonLat,
-    getRandomColor
+    getRandomColor,
+    intersectRayWithSphere
 } from "./utils.mjs";
 
 const TILE_SIZE = 256;
@@ -76,7 +77,9 @@ onload = async () => {
         ];
         downMat = mat;
         const inv = mat4.invert(mat4.create(), downMat);
-        downLonLat = pos2LonLat(normalize(vec3.transformMat4([0, 0, 0], downPos, inv)));
+        const worldPos = vec3.transformMat4([0, 0, 0], downPos, inv);
+        intersectRayWithSphere()
+        downLonLat = pos2LonLat(normalize(worldPos));
     };
     onmouseup = () => {
         downPos = undefined;
@@ -90,8 +93,10 @@ onload = async () => {
             1
         ];
         const inv = mat4.invert(mat4.create(), downMat);
-        const curLonLat = pos2LonLat(normalize(vec3.transformMat4([0, 0, 0], curPos, inv)));
-        console.log(`curLonLat=${curLonLat} downLonLat=${downLonLat}`);
+        const worldPos = vec3.transformMat4([0, 0, 0], curPos, inv);
+        worldPos[2] *= -1;
+        const curLonLat = pos2LonLat(normalize(worldPos));
+        console.log(`curLonLat=${curLonLat} downLonLat=${downLonLat} worldPos=${worldPos}`);
         lon = curLonLat[0] - downLonLat[0];
         lat = curLonLat[1] - downLonLat[1];
     };

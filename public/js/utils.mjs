@@ -68,3 +68,50 @@ export const tile2lat = (y, zoom) => {
 export const getRandomColor = (seed = Math.random()) => {
     return Math.floor((Math.abs(Math.sin(seed) * 16777215)) % 16777215).toString(16);
 };
+
+// https://stackoverflow.com/questions/41727704/function-to-find-point-of-intersection-between-a-ray-and-a-sphere-javascript
+export const dotProduct = (v1, v2) => v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
+
+export const squaredLength = (v) => dotProduct(v, v);
+
+// Returns whether the ray intersects the sphere
+// @param[in] center center point of the sphere (C)
+// @param[in] radius radius of the sphere (R)
+// @param[in] origin origin point of the ray (O)
+// @param[in] direction direction vector of the ray (D)
+export const intersectRayWithSphere = (center, radius, origin, direction) => {
+    // Solve |O + t D - C|^2 = R^2
+    //       t^2 |D|^2 + 2 t < D, O - C > + |O - C|^2 - R^2 = 0
+    const OC = [
+        origin[0] - center[0],
+        origin[1] - center[1],
+        origin[2] - center[2]
+    ];
+
+    // Solve the quadratic equation a t^2 + 2 t b + c = 0
+    const a = squaredLength(direction);
+    const b = dotProduct(direction, OC);
+    const c = squaredLength(OC) - radius * radius;
+    const delta = b * b - a * c;
+
+    if (delta < 0) return NaN; // No solution
+
+    // One or two solutions, take the closest (positive) intersection
+    const sqrtDelta = Math.sqrt(delta);
+
+    // a >= 0
+    const tMin = (-b - sqrtDelta) / a;
+    const tMax = (-b + sqrtDelta) / a;
+
+    // All intersection points are behind the origin of the ray
+    if (tMax < 0) return NaN;
+
+    // tMax >= 0
+    const t = tMin >= 0 ? tMin : tMax;
+
+    // intersection[0] = origin[0] + t * direction[0];
+    // intersection[1] = origin[1] + t * direction[1];
+    // intersection[2] = origin[2] + t * direction[2];
+
+    return t;
+};
