@@ -106,14 +106,16 @@ onload = async () => {
             bounds[3] = bounds[3] * cnvHeight / 2 + cnvHeight / 2;
             bounds = intersectBounds(screenBounds, bounds);
             ctx.strokeStyle = "white";
+            ctx.fillStyle = "white";
             ctx.strokeWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(bounds[0], bounds[1]);
-            ctx.lineTo(bounds[2], bounds[1]);
-            ctx.lineTo(bounds[2], bounds[3]);
-            ctx.lineTo(bounds[0], bounds[3]);
-            ctx.lineTo(bounds[0], bounds[1]);
-            ctx.stroke();
+            // ctx.beginPath();
+            // ctx.moveTo(bounds[0], bounds[1]);
+            // ctx.lineTo(bounds[2], bounds[1]);
+            // ctx.lineTo(bounds[2], bounds[3]);
+            // ctx.lineTo(bounds[0], bounds[3]);
+            // ctx.lineTo(bounds[0], bounds[1]);
+            // ctx.stroke();
+
             const width = Math.round(bounds[2] - bounds[0]);
             const height = Math.round(bounds[3] - bounds[1]);
             if (first) {
@@ -136,6 +138,16 @@ onload = async () => {
                 tileCache[key] = initBuffers(gl, tileX, tileY, zoom);
             }
             if(tileCache[key].texture.loaded) {
+                ctx.fillStyle = "white";
+                for(let i = 0; i < tileCache[key].positions.length; i += 3) {
+                    const x = tileCache[key].positions[i];
+                    const y = tileCache[key].positions[i + 1];
+                    const z = tileCache[key].positions[i + 2];
+                    const pos = vec3.transformMat4([0, 0, 0], [x, y, z], mat);
+                    pos[0] = pos[0] * cnvWidth / 2 + cnvWidth / 2;
+                    pos[1] = pos[1] * cnvHeight / 2 + cnvHeight / 2;
+                    ctx.fillRect(pos[0], pos[1], 2, 2);
+                }
                 tiles.push(tileCache[key]);
                 return true;
             }

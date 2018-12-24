@@ -80,6 +80,7 @@ export const initBuffers = (gl, tileX, tileY, zoom) => {
         textureCoord: textureCoordBuffer,
         indices: indexBuffer,
         indexCount: indices.length,
+        positions,
         texture
     };
 };
