@@ -1,4 +1,4 @@
-import {normalize, getMidPoint, tile2lat, tile2lon, lonLat2Pos, pos2LonLat} from './utils.mjs';
+import {normalize, getRandomColor, tile2lat, tile2lon, lonLat2Pos, pos2LonLat} from './utils.mjs';
 import {loadTexture} from './texture.mjs';
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
@@ -81,6 +81,7 @@ export const initBuffers = (gl, tileX, tileY, zoom) => {
         indices: indexBuffer,
         indexCount: indices.length,
         positions,
+        color: getRandomColor(),
         texture
     };
 };

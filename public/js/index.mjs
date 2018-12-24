@@ -1,11 +1,11 @@
 import {initBuffers} from './world.mjs';
 import {initDefaultShader, initDrawingShader} from './shader.mjs';
-import {deg2rad, lonLat2Pos, tile2lat, tile2lon, getBounds, intersectBounds} from "./utils.mjs";
+import {deg2rad, lonLat2Pos, tile2lat, tile2lon, getBounds, intersectBounds, getRandomColor} from "./utils.mjs";
 
 const TILE_SIZE = 256;
 
 function getPowerOfTwo(value, pow) {
-    var pow = pow || 1;
+    pow = pow || 1;
     while(pow<value) {
         pow *= 2;
     }
@@ -42,7 +42,7 @@ onload = async () => {
         0, 1, 1, 0, 0, 0,
     ]), gl.STATIC_DRAW);
     const canvasTexture = gl.createTexture();
-    const screenBounds = [cnvWidth/4, cnvHeight/4, cnvWidth - cnvWidth/4, cnvHeight - cnvHeight/4];
+    const screenBounds = [0, 0, cnvWidth, cnvHeight];
 
     // shaders
     const defaultShader = await initDefaultShader(gl);
@@ -105,9 +105,9 @@ onload = async () => {
             bounds[2] = bounds[2] * cnvWidth / 2 + cnvWidth / 2;
             bounds[3] = bounds[3] * cnvHeight / 2 + cnvHeight / 2;
             bounds = intersectBounds(screenBounds, bounds);
-            ctx.strokeStyle = "white";
-            ctx.fillStyle = "white";
-            ctx.strokeWidth = 2;
+            // ctx.strokeStyle = getRandomColor(zoom + tileX + tileY);
+            // ctx.fillStyle = "white";
+            // ctx.strokeWidth = 2;
             // ctx.beginPath();
             // ctx.moveTo(bounds[0], bounds[1]);
             // ctx.lineTo(bounds[2], bounds[1]);
@@ -138,16 +138,16 @@ onload = async () => {
                 tileCache[key] = initBuffers(gl, tileX, tileY, zoom);
             }
             if(tileCache[key].texture.loaded) {
-                ctx.fillStyle = "white";
-                for(let i = 0; i < tileCache[key].positions.length; i += 3) {
-                    const x = tileCache[key].positions[i];
-                    const y = tileCache[key].positions[i + 1];
-                    const z = tileCache[key].positions[i + 2];
-                    const pos = vec3.transformMat4([0, 0, 0], [x, y, z], mat);
-                    pos[0] = pos[0] * cnvWidth / 2 + cnvWidth / 2;
-                    pos[1] = pos[1] * cnvHeight / 2 + cnvHeight / 2;
-                    ctx.fillRect(pos[0], pos[1], 2, 2);
-                }
+                // ctx.fillStyle = "white";
+                // for(let i = 0; i < tileCache[key].positions.length; i += 3) {
+                //     const x = tileCache[key].positions[i];
+                //     const y = tileCache[key].positions[i + 1];
+                //     const z = tileCache[key].positions[i + 2];
+                //     const pos = vec3.transformMat4([0, 0, 0], [x, y, z], mat);
+                //     pos[0] = pos[0] * cnvWidth / 2 + cnvWidth / 2;
+                //     pos[1] = pos[1] * cnvHeight / 2 + cnvHeight / 2;
+                //     ctx.fillRect(pos[0], pos[1], 2, 2);
+                // }
                 tiles.push(tileCache[key]);
                 return true;
             }

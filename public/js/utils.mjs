@@ -64,3 +64,7 @@ export const tile2lat = (y, zoom) => {
     const n = Math.PI - 2 * Math.PI * y / Math.pow(2, zoom);
     return 180 / Math.PI * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
 };
+
+export const getRandomColor = (seed = Math.random()) => {
+    return Math.floor((Math.abs(Math.sin(seed) * 16777215)) % 16777215).toString(16);
+};
