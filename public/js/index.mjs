@@ -1,12 +1,20 @@
 import {initBuffers} from './world.mjs';
 import {initDefaultShader, initDrawingShader} from './shader.mjs';
-import {deg2rad, lonLat2Pos, tile2lat, tile2lon, getBounds, intersectBounds, getRandomColor} from "./utils.mjs";
+import {
+    deg2rad, lonLat2Pos,
+    tile2lat,
+    tile2lon,
+    getBounds,
+    intersectBounds,
+    normalize, pos2LonLat,
+    getRandomColor
+} from "./utils.mjs";
 
 const TILE_SIZE = 256;
 
 function getPowerOfTwo(value, pow) {
     pow = pow || 1;
-    while(pow<value) {
+    while (pow < value) {
         pow *= 2;
     }
     return pow;
@@ -50,12 +58,43 @@ onload = async () => {
     const tileCache = {};
 
     // state
+    let mat = mat4.create();
     let lat = 0;
     let lon = 0;
     let alt = 3;
+    let downPos;
+    let downMat;
+    let downLonLat;
     const keys = [];
     onkeydown = (e) => keys[e.key] = true;
     onkeyup = (e) => keys[e.key] = false;
+    onmousedown = (e) => {
+        downPos = [
+            (e.clientX - gl.canvas.clientWidth / 2) / gl.canvas.clientWidth / 2,
+            (e.clientY - gl.canvas.clientHeight / 2) / gl.canvas.clientHeight / 2,
+            1
+        ];
+        downMat = mat;
+        const inv = mat4.invert(mat4.create(), downMat);
+        downLonLat = pos2LonLat(normalize(vec3.transformMat4([0, 0, 0], downPos, inv)));
+    };
+    onmouseup = () => {
+        downPos = undefined;
+        downMat = undefined;
+    };
+    onmousemove = (e) => {
+        if (downPos === undefined) return;
+        const curPos = [
+            (e.clientX - gl.canvas.clientWidth / 2) / gl.canvas.clientWidth / 2,
+            (e.clientY - gl.canvas.clientHeight / 2) / gl.canvas.clientHeight / 2,
+            1
+        ];
+        const inv = mat4.invert(mat4.create(), downMat);
+        const curLonLat = pos2LonLat(normalize(vec3.transformMat4([0, 0, 0], curPos, inv)));
+        console.log(`curLonLat=${curLonLat} downLonLat=${downLonLat}`);
+        lon = curLonLat[0] - downLonLat[0];
+        lat = curLonLat[1] - downLonLat[1];
+    };
 
     // Draw the scene repeatedly
     const start = performance.now();
@@ -128,7 +167,7 @@ onload = async () => {
                 loaded &= getTiles(zoom + 1, tileX * 2 + 1, tileY * 2, mat, tiles);
                 loaded &= getTiles(zoom + 1, tileX * 2, tileY * 2 + 1, mat, tiles);
                 loaded &= getTiles(zoom + 1, tileX * 2 + 1, tileY * 2 + 1, mat, tiles);
-                if(loaded) {
+                if (loaded) {
                     return true;
                 }
             }
@@ -137,7 +176,7 @@ onload = async () => {
             if (tileCache[key] === undefined) {
                 tileCache[key] = initBuffers(gl, tileX, tileY, zoom);
             }
-            if(tileCache[key].texture.loaded) {
+            if (tileCache[key].texture.loaded) {
                 // ctx.fillStyle = "white";
                 // for(let i = 0; i < tileCache[key].positions.length; i += 3) {
                 //     const x = tileCache[key].positions[i];
@@ -154,7 +193,7 @@ onload = async () => {
 
             return false;
         };
-        const mat = mat4.multiply(mat4.create(), projectionMatrix, modelViewMatrix);
+        mat = mat4.multiply(mat4.create(), projectionMatrix, modelViewMatrix);
         const tiles = [];
         getTiles(0, 0, 0, mat, tiles);
         first = false;
