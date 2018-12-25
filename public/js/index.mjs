@@ -77,9 +77,14 @@ onload = async () => {
         ];
         downMat = mat;
         const inv = mat4.invert(mat4.create(), downMat);
-        const worldPos = vec3.transformMat4([0, 0, 0], downPos, inv);
-        intersectRayWithSphere()
-        downLonLat = pos2LonLat(normalize(worldPos));
+        const clickPoint = vec3.transformMat4([0, 0, 0], downPos, inv);
+        const center = [0, 0, 0];
+        const radius = 1;
+        const origin = vec2.transformMat4([0, 0, 0], [0, 0, 0], inv);
+        const direction = normalize(vec3.subtract([0, 0, 0], clickPoint, origin));
+        const t = intersectRayWithSphere(center, radius, origin, direction);
+        console.log(`t=${t}`);
+        downLonLat = pos2LonLat(normalize(clickPoint));
     };
     onmouseup = () => {
         downPos = undefined;
@@ -118,18 +123,15 @@ onload = async () => {
         if (keys['ArrowRight'] === true) lon -= deltaTime;
 
         // perspective
-        const fieldOfView = 45 * Math.PI / 180; // Our field of view is 45 degrees
-        const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight; // width/height ratio that matches the display size
-        const zNear = 0.0001;
-        const zFar = 100.0; // and 100 units away from the camera
-        const projectionMatrix = mat4.create();
-        mat4.perspective(projectionMatrix, fieldOfView, aspect, zNear, zFar);
+        const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight; 
+        const projMat = mat4.create();
+        mat4.perspective(projMat, 45 * Math.PI / 180, aspect, 0.0001, 100.0);
+        mat4.translate(projMat, projMat, [-0.0, 0.0, -alt]);
+        mat4.rotate(projMat, projMat, deg2rad(lat), [1, 0, 0]);
+        mat4.rotate(projMat, projMat, deg2rad(lon), [0, 1, 0]);
 
         // model position
         const modelViewMatrix = mat4.create();
-        mat4.translate(modelViewMatrix, modelViewMatrix, [-0.0, 0.0, -alt]);
-        mat4.rotate(modelViewMatrix, modelViewMatrix, deg2rad(lat), [1, 0, 0]);
-        mat4.rotate(modelViewMatrix, modelViewMatrix, deg2rad(lon), [0, 1, 0]);
 
         // tiles
         let maxZoom = 0;
@@ -198,13 +200,13 @@ onload = async () => {
 
             return false;
         };
-        mat = mat4.multiply(mat4.create(), projectionMatrix, modelViewMatrix);
+        mat = mat4.multiply(mat4.create(), projMat, modelViewMatrix);
         const tiles = [];
         getTiles(0, 0, 0, mat, tiles);
         first = false;
 
         // rendering
-        drawScene(gl, defaultShader, tiles, projectionMatrix, modelViewMatrix);
+        drawScene(gl, defaultShader, tiles, projMat, modelViewMatrix);
 
         // 2d overlay
         ctx.fillStyle = `white`;
