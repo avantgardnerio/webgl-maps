@@ -80,10 +80,10 @@ onload = async () => {
         const clickPoint = vec3.transformMat4([0, 0, 0], downPos, inv);
         const center = [0, 0, 0];
         const radius = 1;
-        const origin = vec2.transformMat4([0, 0, 0], [0, 0, 0], inv);
+        const origin = vec3.transformMat4([0, 0, 0], [0, 0, 0], inv);
         const direction = normalize(vec3.subtract([0, 0, 0], clickPoint, origin));
         const t = intersectRayWithSphere(center, radius, origin, direction);
-        console.log(`t=${t}`);
+        console.log(`t=${t} clickPoint=${clickPoint} origin=${origin}`);
         downLonLat = pos2LonLat(normalize(clickPoint));
     };
     onmouseup = () => {
