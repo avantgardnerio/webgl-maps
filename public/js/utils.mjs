@@ -1,16 +1,11 @@
-export const getMidPoint = (a, b) => [(a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0, (a[2] + b[2]) / 2.0];
-export const getLength = (v) => Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
-export const normalize = (v) => {
-    const len = getLength(v);
-    return [v[0] / len, v[1] / len, v[2] / len];
-};
+export const sq = v => v * v;
 export const multiply = (v, f) => [v[0] * f, v[1] * f, v[2] * f];
-export const sec = (theta) => 1.0 / Math.cos(theta);
-export const deg2rad = (deg) => deg * Math.PI / 180.0;
-export const rad2deg = (rad) => rad * 180.0 / Math.PI;
-export const isPowerOf2 = (value) => (value & (value - 1)) === 0;
+export const sec = theta => 1.0 / Math.cos(theta);
+export const deg2rad = deg => deg * Math.PI / 180.0;
+export const rad2deg = rad => rad * 180.0 / Math.PI;
+export const isPowerOf2 = value => (value & (value - 1)) === 0;
 export const centroid = (a, b, c) => [(a[0] + b[0] + c[0]) / 3, (a[1] + b[1] + c[1]) / 3];
-export const getBounds = (vecs) => {
+export const getBounds = vecs => {
     return vecs.reduce((acc, cur) => {
             acc[0] = Math.min(acc[0], cur[0]);
             acc[1] = Math.min(acc[1], cur[1]);
@@ -69,49 +64,20 @@ export const getRandomColor = (seed = Math.random()) => {
     return Math.floor((Math.abs(Math.sin(seed) * 16777215)) % 16777215).toString(16);
 };
 
-// https://stackoverflow.com/questions/41727704/function-to-find-point-of-intersection-between-a-ray-and-a-sphere-javascript
-export const dotProduct = (v1, v2) => v1[0] * v2[0] + v1[1] * v2[1] + v1[2] * v2[2];
-
-export const squaredLength = (v) => dotProduct(v, v);
-
-// Returns whether the ray intersects the sphere
-// @param[in] center center point of the sphere (C)
-// @param[in] radius radius of the sphere (R)
-// @param[in] origin origin point of the ray (O)
-// @param[in] direction direction vector of the ray (D)
-export const intersectRayWithSphere = (center, radius, origin, direction) => {
-    // Solve |O + t D - C|^2 = R^2
-    //       t^2 |D|^2 + 2 t < D, O - C > + |O - C|^2 - R^2 = 0
-    const OC = [
-        origin[0] - center[0],
-        origin[1] - center[1],
-        origin[2] - center[2]
-    ];
-
-    // Solve the quadratic equation a t^2 + 2 t b + c = 0
-    const a = squaredLength(direction);
-    const b = dotProduct(direction, OC);
-    const c = squaredLength(OC) - radius * radius;
-    const delta = b * b - a * c;
-
-    if (delta < 0) return NaN; // No solution
-
-    // One or two solutions, take the closest (positive) intersection
-    const sqrtDelta = Math.sqrt(delta);
-
-    // a >= 0
-    const tMin = (-b - sqrtDelta) / a;
-    const tMax = (-b + sqrtDelta) / a;
-
-    // All intersection points are behind the origin of the ray
-    if (tMax < 0) return NaN;
-
-    // tMax >= 0
-    const t = tMin >= 0 ? tMin : tMax;
-
-    // intersection[0] = origin[0] + t * direction[0];
-    // intersection[1] = origin[1] + t * direction[1];
-    // intersection[2] = origin[2] + t * direction[2];
-
+// http://kylehalladay.com/blog/tutorial/math/2013/12/24/Ray-Sphere-Intersection.html
+export const intersectRayWithSphere = (center, radius, origin, dir) => {
+    const L = vec3.subtract(vec3.create(), center, origin);
+    const tc = vec3.dot(dir, L);
+    if (tc < 0) return NaN; // behind origin
+    const dSq = sq(tc) - vec3.sqrLen(L);
+    console.log(`tc=${tc} L=${L}`);
+    const radiusSq = sq(radius);
+    if (dSq > radiusSq) return NaN; // ray passes sphere farther than radius (miss)
+    const t1c = Math.sqrt(radiusSq - dSq);
+    const isecs = [tc - t1c, tc + t1c];
+    console.log(`isecs=${isecs} t1c=${t1c} rad2=${radiusSq} d2=${dSq}`);
+    const t = isecs
+        .filter(t => t >= 0)
+        .reduce((acc, cur) => Math.min(acc, cur), Number.POSITIVE_INFINITY);
     return t;
 };

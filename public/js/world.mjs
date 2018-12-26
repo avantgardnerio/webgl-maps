@@ -1,4 +1,4 @@
-import {normalize, getRandomColor, tile2lat, tile2lon, lonLat2Pos, pos2LonLat} from './utils.mjs';
+import {getRandomColor, tile2lat, tile2lon, lonLat2Pos, pos2LonLat} from './utils.mjs';
 import {loadTexture} from './texture.mjs';
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
@@ -22,7 +22,7 @@ export const initBuffers = (gl, tileX, tileY, zoom) => {
             const lon = x * xInc + w;
             const lat = y * yInc + s;
             const pos = lonLat2Pos([lon, lat]);
-            positions.push(...normalize(pos));
+            positions.push(...vec3.normalize(pos, pos));
         }
     }
 
@@ -43,7 +43,7 @@ export const initBuffers = (gl, tileX, tileY, zoom) => {
     const vertexNormals = [];
     for (let i = 0; i < positions.length; i += 3) {
         const vertPos = [positions[i], positions[i + 1], positions[i + 2]];
-        const norm = normalize(vertPos);
+        const norm = vec3.normalize(vertPos, vertPos);
         Array.prototype.push.apply(vertexNormals, norm);
     }
 

@@ -6,7 +6,7 @@ import {
     tile2lon,
     getBounds,
     intersectBounds,
-    normalize, pos2LonLat,
+    pos2LonLat,
     getRandomColor,
     intersectRayWithSphere
 } from "./utils.mjs";
@@ -77,14 +77,14 @@ onload = async () => {
         ];
         downMat = mat;
         const inv = mat4.invert(mat4.create(), downMat);
-        const clickPoint = vec3.transformMat4([0, 0, 0], downPos, inv);
-        const center = [0, 0, 0];
+        const clickPoint = vec3.transformMat4(vec3.create(), downPos, inv);
+        const center = vec3.create();
         const radius = 1;
-        const origin = vec3.transformMat4([0, 0, 0], [0, 0, 0], inv);
-        const direction = normalize(vec3.subtract([0, 0, 0], clickPoint, origin));
+        const origin = vec3.transformMat4(vec3.create(), vec3.create(), inv);
+        const direction = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), clickPoint, origin));
         const t = intersectRayWithSphere(center, radius, origin, direction);
-        console.log(`t=${t} clickPoint=${clickPoint} origin=${origin}`);
-        downLonLat = pos2LonLat(normalize(clickPoint));
+        console.log(`t=${t} clickPoint=${clickPoint} origin=${origin} direction=${direction}`);
+        downLonLat = pos2LonLat(vec3.normalize(vec3.create(), clickPoint));
     };
     onmouseup = () => {
         downPos = undefined;
@@ -100,7 +100,7 @@ onload = async () => {
         const inv = mat4.invert(mat4.create(), downMat);
         const worldPos = vec3.transformMat4([0, 0, 0], curPos, inv);
         worldPos[2] *= -1;
-        const curLonLat = pos2LonLat(normalize(worldPos));
+        const curLonLat = pos2LonLat(vec3.normalize(vec3.create(), worldPos));
         console.log(`curLonLat=${curLonLat} downLonLat=${downLonLat} worldPos=${worldPos}`);
         lon = curLonLat[0] - downLonLat[0];
         lat = curLonLat[1] - downLonLat[1];
