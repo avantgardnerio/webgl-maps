@@ -67,10 +67,9 @@ export const getRandomColor = (seed = Math.random()) => {
 // http://kylehalladay.com/blog/tutorial/math/2013/12/24/Ray-Sphere-Intersection.html
 export const intersectRayWithSphere = (center, radius, origin, dir) => {
     const L = vec3.subtract(vec3.create(), center, origin);
-    const tc = vec3.dot(dir, L);
+    const tc = vec3.dot(L, dir);
     if (tc < 0) return NaN; // behind origin
-    const dSq = sq(tc) - vec3.sqrLen(L);
-    console.log(`tc=${tc} L=${L}`);
+    const dSq = vec3.sqrLen(L) - sq(tc);
     const radiusSq = sq(radius);
     if (dSq > radiusSq) return NaN; // ray passes sphere farther than radius (miss)
     const t1c = Math.sqrt(radiusSq - dSq);

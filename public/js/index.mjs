@@ -71,8 +71,8 @@ onload = async () => {
     onkeyup = (e) => keys[e.key] = false;
     onmousedown = (e) => {
         downPos = [
-            (e.clientX - gl.canvas.clientWidth / 2) / gl.canvas.clientWidth / 2,
-            (e.clientY - gl.canvas.clientHeight / 2) / gl.canvas.clientHeight / 2,
+            (e.clientX - gl.canvas.clientWidth / 2) / (gl.canvas.clientWidth / 2),
+            (e.clientY - gl.canvas.clientHeight / 2) / (gl.canvas.clientHeight / 2),
             1
         ];
         downMat = mat;
@@ -93,12 +93,12 @@ onload = async () => {
     onmousemove = (e) => {
         if (downPos === undefined) return;
         const curPos = [
-            (e.clientX - gl.canvas.clientWidth / 2) / gl.canvas.clientWidth / 2,
-            (e.clientY - gl.canvas.clientHeight / 2) / gl.canvas.clientHeight / 2,
+            (e.clientX - gl.canvas.clientWidth / 2) / (gl.canvas.clientWidth / 2),
+            (e.clientY - gl.canvas.clientHeight / 2) / (gl.canvas.clientHeight / 2),
             1
         ];
         const inv = mat4.invert(mat4.create(), downMat);
-        const worldPos = vec3.transformMat4([0, 0, 0], curPos, inv);
+        const worldPos = vec3.transformMat4(vec3.create(), curPos, inv);
         worldPos[2] *= -1;
         const curLonLat = pos2LonLat(vec3.normalize(vec3.create(), worldPos));
         console.log(`curLonLat=${curLonLat} downLonLat=${downLonLat} worldPos=${worldPos}`);
