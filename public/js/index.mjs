@@ -6,6 +6,7 @@ import {
     tile2lon,
     getBounds,
     intersectBounds,
+    lerp,
     pos2LonLat,
     getRandomColor,
     intersectRayWithSphere
@@ -81,27 +82,38 @@ onload = async () => {
         const center = vec3.create();
         const radius = 1;
         const origin = vec3.transformMat4(vec3.create(), vec3.create(), inv);
-        const direction = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), clickPoint, origin));
-        const t = intersectRayWithSphere(center, radius, origin, direction);
-        console.log(`t=${t} clickPoint=${clickPoint} origin=${origin} direction=${direction}`);
-        downLonLat = pos2LonLat(vec3.normalize(vec3.create(), clickPoint));
+        const dir = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), clickPoint, origin));
+        const t = intersectRayWithSphere(center, radius, origin, dir);
+        console.log(`t=${t} clickPoint=${clickPoint} origin=${origin} direction=${dir}`);
+        if(isNaN(t) || !isFinite(t)) return;
+        const worldPos = lerp(origin, dir, t);
+        downLonLat = pos2LonLat(vec3.normalize(vec3.create(), worldPos));
+        console.log(`mouseDown on ${downLonLat} worldPos=${worldPos}`)
     };
     onmouseup = () => {
         downPos = undefined;
         downMat = undefined;
+        downLonLat = undefined;
     };
     onmousemove = (e) => {
-        if (downPos === undefined) return;
+        if (downLonLat === undefined) return;
         const curPos = [
             (e.clientX - gl.canvas.clientWidth / 2) / (gl.canvas.clientWidth / 2),
             (e.clientY - gl.canvas.clientHeight / 2) / (gl.canvas.clientHeight / 2),
             1
         ];
         const inv = mat4.invert(mat4.create(), downMat);
-        const worldPos = vec3.transformMat4(vec3.create(), curPos, inv);
-        worldPos[2] *= -1;
+        const clickPoint = vec3.transformMat4(vec3.create(), curPos, inv);
+        const center = vec3.create();
+        const radius = 1;
+        const origin = vec3.transformMat4(vec3.create(), vec3.create(), inv);
+        const dir = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), clickPoint, origin));
+        const t = intersectRayWithSphere(center, radius, origin, dir);
+        console.log(`t=${t} clickPoint=${clickPoint} origin=${origin} direction=${dir}`);
+        if(isNaN(t) || !isFinite(t)) return;
+        const worldPos = lerp(origin, dir, t);
         const curLonLat = pos2LonLat(vec3.normalize(vec3.create(), worldPos));
-        console.log(`curLonLat=${curLonLat} downLonLat=${downLonLat} worldPos=${worldPos}`);
+
         lon = curLonLat[0] - downLonLat[0];
         lat = curLonLat[1] - downLonLat[1];
     };

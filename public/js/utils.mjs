@@ -64,6 +64,14 @@ export const getRandomColor = (seed = Math.random()) => {
     return Math.floor((Math.abs(Math.sin(seed) * 16777215)) % 16777215).toString(16);
 };
 
+export const lerp = (origin, dir, t) => {
+    return [
+        origin[0] + dir[0] * t,
+        origin[1] + dir[1] * t,
+        origin[2] + dir[2] * t,
+    ]
+};
+
 // http://kylehalladay.com/blog/tutorial/math/2013/12/24/Ray-Sphere-Intersection.html
 export const intersectRayWithSphere = (center, radius, origin, dir) => {
     const L = vec3.subtract(vec3.create(), center, origin);
