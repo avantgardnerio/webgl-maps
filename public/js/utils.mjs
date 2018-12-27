@@ -88,3 +88,12 @@ export const intersectRayWithSphere = (center, radius, origin, dir) => {
         .reduce((acc, cur) => Math.min(acc, cur), Number.POSITIVE_INFINITY);
     return t;
 };
+
+export const getPowerOfTwo = (value, pow) => {
+    pow = pow || 1;
+    while (pow < value) {
+        pow *= 2;
+    }
+    return pow;
+};
+

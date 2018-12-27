@@ -9,18 +9,10 @@ import {
     lerp,
     pos2LonLat,
     getRandomColor,
+    getPowerOfTwo,
     intersectRayWithSphere
 } from "./utils.mjs";
-
-const TILE_SIZE = 256;
-
-function getPowerOfTwo(value, pow) {
-    pow = pow || 1;
-    while (pow < value) {
-        pow *= 2;
-    }
-    return pow;
-}
+import {TILE_SIZE} from "./constants.mjs";
 
 let first = true;
 onload = async () => {
@@ -71,6 +63,10 @@ onload = async () => {
     const keys = [];
     onkeydown = (e) => keys[e.key] = true;
     onkeyup = (e) => keys[e.key] = false;
+    onwheel = (e) => {
+        console.log(`wheel=${e.deltaY}`);
+        e.preventDefault();
+    };
     onmousedown = (e) => {
         downPos = [
             (e.clientX - gl.canvas.clientWidth / 2) / (gl.canvas.clientWidth / 2),
