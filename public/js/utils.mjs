@@ -1,3 +1,5 @@
+import {EQUATOR_RADIUS_KM, POLAR_RADIUS_KM} from "./constants.mjs";
+
 export const sq = v => v * v;
 export const multiply = (v, f) => [v[0] * f, v[1] * f, v[2] * f];
 export const sec = theta => 1.0 / Math.cos(theta);
@@ -28,17 +30,18 @@ export const intersectBounds = (a, b) => {
 };
 
 export const pos2LonLat = (vec) => {
-    const lon = Math.atan2(vec[0], vec[2]) * 180 / Math.PI;
-    const lat = Math.acos(-vec[1]) * 180 / Math.PI - 90;
+    const v = vec3.normalize(vec3.create(), vec);
+    const lon = Math.atan2(v[0], v[2]) * 180 / Math.PI;
+    const lat = Math.acos(-v[1]) * 180 / Math.PI - 90;
     return [lon, lat];
 };
 
 export const lonLat2Pos = (vec) => {
     const lon = deg2rad(vec[0] + 90);
     const lat = deg2rad(vec[1]);
-    const x = -Math.cos(lon) * Math.cos(lat);
-    const y = Math.sin(lat);
-    const z = Math.sin(lon) * Math.cos(lat);
+    const x = -EQUATOR_RADIUS_KM * Math.cos(lon) * Math.cos(lat);
+    const y = POLAR_RADIUS_KM * Math.sin(lat);
+    const z = EQUATOR_RADIUS_KM * Math.sin(lon) * Math.cos(lat);
     return [x, y, z];
 };
 

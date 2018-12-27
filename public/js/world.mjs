@@ -22,7 +22,7 @@ export const initBuffers = (gl, tileX, tileY, zoom) => {
             const lon = x * xInc + w;
             const lat = y * yInc + s;
             const pos = lonLat2Pos([lon, lat]);
-            positions.push(...vec3.normalize(pos, pos));
+            positions.push(...pos);
         }
     }
 
@@ -55,7 +55,7 @@ export const initBuffers = (gl, tileX, tileY, zoom) => {
         const u = (lonLat[0] - w) / (e - w);
         const v = (n - lonLat[1]) / (n - s);
         const texCoord = [u, v];
-        Array.prototype.push.apply(textureCoordinates, texCoord);
+        textureCoordinates.push(...texCoord);
     }
 
     const positionBuffer = gl.createBuffer();

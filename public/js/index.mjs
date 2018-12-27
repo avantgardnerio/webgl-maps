@@ -55,7 +55,7 @@ onload = async () => {
     let mat = mat4.create();
     let lat = 0;
     let lon = 0;
-    let alt = 3;
+    let alt = 1800;
     let downPos;
     let downMat;
     let downLonLat;
@@ -135,7 +135,7 @@ onload = async () => {
         // perspective
         const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight; 
         const projMat = mat4.create();
-        mat4.perspective(projMat, 45 * Math.PI / 180, aspect, 0.0001, 100.0);
+        mat4.perspective(projMat, 45 * Math.PI / 180, aspect, 0.001, 10000.0); // 1m - 10km
         mat4.translate(projMat, projMat, [-0.0, 0.0, -alt]);
         mat4.rotate(projMat, projMat, deg2rad(lat), [1, 0, 0]);
         mat4.rotate(projMat, projMat, deg2rad(lon), [0, 1, 0]);
