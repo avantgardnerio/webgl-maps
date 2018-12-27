@@ -51,7 +51,6 @@ onload = async () => {
     onkeydown = (e) => keys[e.key] = true;
     onkeyup = (e) => keys[e.key] = false;
     onwheel = (e) => {
-        console.log(`wheel=${e.deltaY}`);
         const adjacent = alt - EQUATOR_RADIUS_KM;
         const opposite = adjacent * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
         alt += e.deltaY * opposite / 100;
@@ -129,7 +128,7 @@ onload = async () => {
 
         mat = mat4.multiply(mat4.create(), projMat, modelViewMatrix);
         const tiles = [];
-        getTiles(gl, 0, 0, 0, mat, screenBounds, tiles);
+        getTiles(gl, defaultShader, 0, 0, 0, mat, screenBounds, tiles);
 
         // rendering
         drawScene(gl, defaultShader, tiles, projMat, modelViewMatrix);
@@ -173,7 +172,7 @@ onload = async () => {
     requestAnimationFrame(render);
 };
 
-const drawScene = (gl, programInfo, models, projectionMatrix, modelViewMatrix) => {
+const drawScene = (gl, shader, models, projectionMatrix, modelViewMatrix) => {
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clearDepth(1.0);
     gl.enable(gl.DEPTH_TEST);
@@ -183,34 +182,10 @@ const drawScene = (gl, programInfo, models, projectionMatrix, modelViewMatrix) =
     const normalMatrix = mat4.create();
     mat4.invert(normalMatrix, modelViewMatrix);
     mat4.transpose(normalMatrix, normalMatrix);
+    gl.useProgram(shader.program);
+    gl.uniformMatrix4fv(shader.uniformLocations.projectionMatrix, false, projectionMatrix);
+    gl.uniformMatrix4fv(shader.uniformLocations.modelViewMatrix, false, modelViewMatrix);
+    gl.uniformMatrix4fv(shader.uniformLocations.normalMatrix, false, normalMatrix);
 
-    // positions
-    for (let model of models) {
-        gl.bindBuffer(gl.ARRAY_BUFFER, model.position);
-        gl.vertexAttribPointer(programInfo.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition);
-
-        // texture coords
-        gl.bindBuffer(gl.ARRAY_BUFFER, model.textureCoord);
-        gl.vertexAttribPointer(programInfo.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(programInfo.attribLocations.textureCoord);
-
-        // normals
-        gl.bindBuffer(gl.ARRAY_BUFFER, model.normal);
-        gl.vertexAttribPointer(programInfo.attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(programInfo.attribLocations.vertexNormal);
-
-        // indices
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, model.indices);
-        gl.useProgram(programInfo.program);
-        gl.uniformMatrix4fv(programInfo.uniformLocations.projectionMatrix, false, projectionMatrix);
-        gl.uniformMatrix4fv(programInfo.uniformLocations.modelViewMatrix, false, modelViewMatrix);
-        gl.uniformMatrix4fv(programInfo.uniformLocations.normalMatrix, false, normalMatrix);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, model.texture.texture);
-        gl.uniform1i(programInfo.uniformLocations.uSampler, 0);
-
-        // draw
-        gl.drawElements(gl.TRIANGLES, model.indexCount, gl.UNSIGNED_SHORT, 0);
-    }
+    for (let model of models) model.draw();
 };

@@ -4,7 +4,7 @@ import {getBounds, intersectBounds} from "./utils.mjs";
 import {TILE_SIZE} from "./constants.mjs";
 
 const tileCache = {};
-export const getTiles = (gl, zoom, tileX, tileY, mat, screenBounds, tiles) => {
+export const getTiles = (gl, shader, zoom, tileX, tileY, mat, screenBounds, tiles) => {
     const n = tile2lat(tileY, zoom);
     const e = tile2lon(tileX + 1, zoom);
     const s = tile2lat(tileY + 1, zoom);
@@ -24,15 +24,15 @@ export const getTiles = (gl, zoom, tileX, tileY, mat, screenBounds, tiles) => {
     const height = Math.round(bounds[3] - bounds[1]);
     if (zoom < 18 && (zoom < 2 || (width > TILE_SIZE * 1.5 && height > 5) || (height > TILE_SIZE * 1.5 && width > 5))) {
         let loaded = true;
-        loaded &= getTiles(gl, zoom + 1, tileX * 2, tileY * 2, mat, screenBounds, tiles);
-        loaded &= getTiles(gl, zoom + 1, tileX * 2 + 1, tileY * 2, mat, screenBounds, tiles);
-        loaded &= getTiles(gl, zoom + 1, tileX * 2, tileY * 2 + 1, mat, screenBounds, tiles);
-        loaded &= getTiles(gl, zoom + 1, tileX * 2 + 1, tileY * 2 + 1, mat, screenBounds, tiles);
+        loaded &= getTiles(gl, shader, zoom + 1, tileX * 2, tileY * 2, mat, screenBounds, tiles);
+        loaded &= getTiles(gl, shader, zoom + 1, tileX * 2 + 1, tileY * 2, mat, screenBounds, tiles);
+        loaded &= getTiles(gl, shader, zoom + 1, tileX * 2, tileY * 2 + 1, mat, screenBounds, tiles);
+        loaded &= getTiles(gl, shader, zoom + 1, tileX * 2 + 1, tileY * 2 + 1, mat, screenBounds, tiles);
         if (loaded) return true;
     }
 
     const key = `${zoom}/${tileX}/${tileY}`;
-    if (tileCache[key] === undefined) tileCache[key] = initBuffers(gl, tileX, tileY, zoom);
+    if (tileCache[key] === undefined) tileCache[key] = initBuffers(gl, shader, tileX, tileY, zoom);
     if (tileCache[key].texture.loaded) {
         tiles.push(tileCache[key]);
         return true;
@@ -41,7 +41,7 @@ export const getTiles = (gl, zoom, tileX, tileY, mat, screenBounds, tiles) => {
 };
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
-export const initBuffers = (gl, tileX, tileY, zoom) => {
+export const initBuffers = (gl, shader, tileX, tileY, zoom) => {
     const n = tile2lat(tileY, zoom);
     const e = tile2lon(tileX + 1, zoom);
     const s = tile2lat(tileY + 1, zoom);
@@ -108,14 +108,36 @@ export const initBuffers = (gl, tileX, tileY, zoom) => {
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
+    const draw = () => {
+        // positions
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.vertexAttribPointer(shader.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(shader.attribLocations.vertexPosition);
+
+        // texture coords
+        gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+        gl.vertexAttribPointer(shader.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(shader.attribLocations.textureCoord);
+
+        // normals
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.vertexAttribPointer(shader.attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(shader.attribLocations.vertexNormal);
+
+        // indices
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+        // textures
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture.texture);
+        gl.uniform1i(shader.uniformLocations.uSampler, 0);
+
+        // draw
+        gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+    };
+
     return {
-        position: positionBuffer,
-        normal: normalBuffer,
-        textureCoord: textureCoordBuffer,
-        indices: indexBuffer,
-        indexCount: indices.length,
-        positions,
-        color: getRandomColor(),
+        draw,
         texture
     };
 };
