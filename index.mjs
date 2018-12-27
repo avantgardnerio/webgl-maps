@@ -6,6 +6,7 @@ dotenv.config();
 const app = express();
 
 app.use(express.static('public'));
+app.use('/lib/gl-matrix', express.static('node_modules/gl-matrix/dist'));
 
 app.get(/\/img\/osm\/([0-9]*)\/([0-9]*)\/([0-9]*)\.png/, async (req, res) => {
     const zoom = parseInt(req.params[0]);
