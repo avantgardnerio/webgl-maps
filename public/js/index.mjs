@@ -2,6 +2,7 @@ import {getTiles} from './world.mjs';
 import {initDefaultShader, initDrawingShader} from './shader.mjs';
 import {deg2rad, lonLat2Pos, getPowerOfTwo, device2LonLat} from "./utils.mjs";
 import {EQUATOR_RADIUS_KM, FOV} from "./constants.mjs";
+import {createCanvas} from "./canvas.mjs";
 
 onload = async () => {
     // 3d webgl canvas
@@ -11,32 +12,12 @@ onload = async () => {
     document.body.appendChild(canvas);
     const gl = canvas.getContext('webgl');
 
-    // 2d drawing canvas
-    const cnv2d = document.createElement(`canvas`);
-    const cnvWidth = getPowerOfTwo(innerWidth);
-    const cnvHeight = getPowerOfTwo(innerHeight);
-    cnv2d.setAttribute(`width`, `${cnvWidth}px`);
-    cnv2d.setAttribute(`height`, `${cnvHeight}px`);
-    const ctx = cnv2d.getContext('2d');
-    ctx.font = "24px monospace";
-    const quadVertBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadVertBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-        -1.0, 1.0, 1.0, 1.0, 1.0, -1.0,
-        -1.0, 1.0, 1.0, -1.0, -1.0, -1.0
-    ]), gl.STATIC_DRAW);
-    const quadTexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, quadTexBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
-        0, 1, 1, 1, 1, 0,
-        0, 1, 1, 0, 0, 0,
-    ]), gl.STATIC_DRAW);
-    const canvasTexture = gl.createTexture();
-    const screenBounds = [0, 0, cnvWidth, cnvHeight];
-
     // shaders
     const defaultShader = await initDefaultShader(gl);
     const drawingShader = await initDrawingShader(gl);
+
+    // 2d drawing canvas
+    const cnv2d = createCanvas(gl, drawingShader, innerWidth, innerHeight);
 
     // state
     let mat = mat4.create();
@@ -57,11 +38,11 @@ onload = async () => {
     onmousedown = (e) => {
         downMat = mat;
         lonLat = [lon, lat];
-        downLonLat = device2LonLat(downMat, e.clientX, e.clientY, cnvWidth, cnvHeight);
+        downLonLat = device2LonLat(downMat, e.clientX, e.clientY, cnv2d.width, cnv2d.height);
     };
     onmousemove = (e) => {
         if (downLonLat === undefined) return;
-        const curLonLat = device2LonLat(downMat, e.clientX, e.clientY, cnvWidth, cnvHeight);
+        const curLonLat = device2LonLat(downMat, e.clientX, e.clientY, cnv2d.width, cnv2d.height);
         lon = curLonLat[0] - downLonLat[0] + lonLat[0];
         lat = downLonLat[1] - curLonLat[1] + lonLat[1];
     };
@@ -75,8 +56,7 @@ onload = async () => {
     let last = start;
     const render = (now) => {
         const deltaTime = (now - last) / 1000;
-        ctx.fillStyle = `rgba(1, 0, 0, 1)`;
-        ctx.clearRect(0, 0, cnvWidth, cnvHeight);
+        cnv2d.clear();
 
         // controls
         if (keys['w'] === true) alt = Math.max(1.0002, alt - deltaTime * 100);
@@ -89,7 +69,7 @@ onload = async () => {
         // perspective
         const kmVisible = (alt - EQUATOR_RADIUS_KM) * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
         const projMat = mat4.create();
-        mat4.perspective(projMat, FOV, cnvWidth / cnvHeight, kmVisible / 1000, kmVisible * 10);
+        mat4.perspective(projMat, FOV, cnv2d.width / cnv2d.height, kmVisible / 1000, kmVisible * 10);
         mat4.translate(projMat, projMat, [-0.0, 0.0, -alt]);
         mat4.rotate(projMat, projMat, deg2rad(lat), [1, 0, 0]);
         mat4.rotate(projMat, projMat, deg2rad(lon), [0, 1, 0]);
@@ -98,43 +78,23 @@ onload = async () => {
         const modelViewMatrix = mat4.create();
         mat = mat4.multiply(mat4.create(), projMat, modelViewMatrix);
         const tiles = [];
-        getTiles(gl, defaultShader, 0, 0, 0, mat, screenBounds, tiles);
+        getTiles(gl, defaultShader, 0, 0, 0, mat, [0, 0, cnv2d.width, cnv2d.height], tiles);
 
         // rendering
         drawScene(gl, defaultShader, tiles, projMat, modelViewMatrix);
 
         // 2d overlay
-        ctx.fillStyle = `white`;
-        ctx.fillText(`lon: ${lon.toFixed(6)}`, 10, 50);
-        ctx.fillText(`lat: ${lat.toFixed(6)}`, 10, 75);
-        ctx.fillText(`alt: ${(alt - EQUATOR_RADIUS_KM).toFixed(2)}km`, 10, 100);
+        cnv2d.ctx.fillStyle = `white`;
+        cnv2d.ctx.fillText(`lon: ${lon.toFixed(6)}`, 10, 50);
+        cnv2d.ctx.fillText(`lat: ${lat.toFixed(6)}`, 10, 75);
+        cnv2d.ctx.fillText(`alt: ${(alt - EQUATOR_RADIUS_KM).toFixed(2)}km`, 10, 100);
         if (downLonLat !== undefined) {
             const pos = vec3.transformMat4(vec3.create(), lonLat2Pos(downLonLat), mat);
-            pos[0] = pos[0] * cnvWidth / 2 + cnvWidth / 2;
-            pos[1] = -pos[1] * cnvHeight / 2 + cnvHeight / 2;
-            ctx.fillRect(pos[0], pos[1], 2, 2);
+            pos[0] = pos[0] * cnv2d.width / 2 + cnv2d.width / 2;
+            pos[1] = -pos[1] * cnv2d.height / 2 + cnv2d.height / 2;
+            cnv2d.ctx.fillRect(pos[0], pos[1], 2, 2);
         }
-        gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-        gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cnv2d);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_NEAREST);
-        gl.generateMipmap(gl.TEXTURE_2D);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-        gl.enable(gl.BLEND);
-        gl.disable(gl.DEPTH_TEST);
-        gl.bindBuffer(gl.ARRAY_BUFFER, quadVertBuffer);
-        gl.vertexAttribPointer(drawingShader.attribLocations.vertexPosition, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(drawingShader.attribLocations.vertexPosition);
-        gl.bindBuffer(gl.ARRAY_BUFFER, quadTexBuffer);
-        gl.vertexAttribPointer(drawingShader.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(drawingShader.attribLocations.textureCoord);
-        gl.useProgram(drawingShader.program);
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
-        gl.uniform1i(drawingShader.samplerUniform, 0);
-        gl.drawArrays(gl.TRIANGLES, 0, 6);
+        cnv2d.draw();
 
         requestAnimationFrame(render);
         last = now;
