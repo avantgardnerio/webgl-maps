@@ -73,7 +73,7 @@ onload = async () => {
     onmousedown = (e) => {
         downPos = [
             (e.clientX - gl.canvas.clientWidth / 2) / (gl.canvas.clientWidth / 2),
-            (e.clientY - gl.canvas.clientHeight / 2) / (gl.canvas.clientHeight / 2),
+            -(e.clientY - gl.canvas.clientHeight / 2) / (gl.canvas.clientHeight / 2),
             1
         ];
         downMat = mat;
@@ -99,7 +99,7 @@ onload = async () => {
         if (downLonLat === undefined) return;
         const curPos = [
             (e.clientX - gl.canvas.clientWidth / 2) / (gl.canvas.clientWidth / 2),
-            (e.clientY - gl.canvas.clientHeight / 2) / (gl.canvas.clientHeight / 2),
+            -(e.clientY - gl.canvas.clientHeight / 2) / (gl.canvas.clientHeight / 2),
             1
         ];
         const inv = mat4.invert(mat4.create(), downMat);
@@ -225,6 +225,12 @@ onload = async () => {
         ctx.fillText(`lon: ${lon}`, 10, 50);
         ctx.fillText(`lat: ${lat}`, 10, 75);
         ctx.fillText(`zoom: ${maxZoom}`, 10, 100);
+        if(downLonLat !== undefined) {
+            const pos = vec3.transformMat4(vec3.create(), lonLat2Pos(downLonLat), mat);
+            pos[0] = pos[0] * cnvWidth / 2 + cnvWidth / 2;
+            pos[1] = -pos[1] * cnvHeight / 2 + cnvHeight / 2;
+            ctx.fillRect(pos[0], pos[1], 2, 2);
+        }
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         gl.bindTexture(gl.TEXTURE_2D, canvasTexture);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, cnv2d);
