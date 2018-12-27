@@ -12,8 +12,9 @@ export const initBuffers = (gl, tileX, tileY, zoom) => {
     // Load texture
     const texture = loadTexture(gl, `img/osm/${zoom}/${tileX}/${tileY}.png`);
 
-    // positions
+    // positions & Texture coordinates
     const positions = [];
+    const textureCoordinates = [];
     const resolution = 16;
     const yInc = (n - s) / resolution;
     const xInc = (e - w) / resolution;
@@ -23,6 +24,11 @@ export const initBuffers = (gl, tileX, tileY, zoom) => {
             const lat = y * yInc + s;
             const pos = lonLat2Pos([lon, lat]);
             positions.push(...pos);
+
+            const u = (lon - w) / (e - w);
+            const v = (n - lat) / (n - s);
+            const texCoord = [u, v];
+            textureCoordinates.push(...texCoord);
         }
     }
 
@@ -45,17 +51,6 @@ export const initBuffers = (gl, tileX, tileY, zoom) => {
         const vertPos = [positions[i], positions[i + 1], positions[i + 2]];
         const norm = vec3.normalize(vertPos, vertPos);
         Array.prototype.push.apply(vertexNormals, norm);
-    }
-
-    // Texture coordinates
-    const textureCoordinates = [];
-    for (let i = 0; i < positions.length; i += 3) {
-        const vec = [positions[i], positions[i + 1], positions[i + 2]];
-        const lonLat = pos2LonLat(vec);
-        const u = (lonLat[0] - w) / (e - w);
-        const v = (n - lonLat[1]) / (n - s);
-        const texCoord = [u, v];
-        textureCoordinates.push(...texCoord);
     }
 
     const positionBuffer = gl.createBuffer();
