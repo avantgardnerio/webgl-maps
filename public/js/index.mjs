@@ -13,7 +13,7 @@ import {
     intersectRayWithSphere
 } from "./utils.mjs";
 import {TILE_SIZE} from "./constants.mjs";
-import {EQUATOR_RADIUS_KM} from "./constants.mjs";
+import {EQUATOR_RADIUS_KM, FOV} from "./constants.mjs";
 
 let first = true;
 onload = async () => {
@@ -66,6 +66,9 @@ onload = async () => {
     onkeyup = (e) => keys[e.key] = false;
     onwheel = (e) => {
         console.log(`wheel=${e.deltaY}`);
+        const adjacent = alt - EQUATOR_RADIUS_KM;
+        const opposite = adjacent * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
+        alt += e.deltaY * opposite / 100;
         e.preventDefault();
     };
     onmousedown = (e) => {
@@ -136,7 +139,7 @@ onload = async () => {
         // perspective
         const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight; 
         const projMat = mat4.create();
-        mat4.perspective(projMat, 45 * Math.PI / 180, aspect, 0.1, 20000.0); // 10m - 20km
+        mat4.perspective(projMat, FOV, aspect, 0.1, 20000.0); // 10m - 20km
         mat4.translate(projMat, projMat, [-0.0, 0.0, -alt]);
         mat4.rotate(projMat, projMat, deg2rad(lat), [1, 0, 0]);
         mat4.rotate(projMat, projMat, deg2rad(lon), [0, 1, 0]);
