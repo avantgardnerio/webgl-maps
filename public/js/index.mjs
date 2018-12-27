@@ -137,9 +137,11 @@ onload = async () => {
         if (keys['ArrowRight'] === true) lon -= deltaTime;
 
         // perspective
-        const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight; 
+        const adjacent = alt - EQUATOR_RADIUS_KM;
+        const opposite = adjacent * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
+        const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
         const projMat = mat4.create();
-        mat4.perspective(projMat, FOV, aspect, 0.1, 20000.0); // 10m - 20km
+        mat4.perspective(projMat, FOV, aspect, opposite / 1000, opposite * 10);
         mat4.translate(projMat, projMat, [-0.0, 0.0, -alt]);
         mat4.rotate(projMat, projMat, deg2rad(lat), [1, 0, 0]);
         mat4.rotate(projMat, projMat, deg2rad(lon), [0, 1, 0]);
@@ -182,7 +184,7 @@ onload = async () => {
                 console.log(`zoom=${zoom} ${width}x${height} ${bounds}`);
             }
 
-            if (zoom < 18 && (zoom < 2 || (width > TILE_SIZE && height > 5) || (height > TILE_SIZE && width > 5))) {
+            if (zoom < 18 && (zoom < 2 || (width > TILE_SIZE * 1.5 && height > 5) || (height > TILE_SIZE * 1.5 && width > 5))) {
                 let loaded = true;
                 loaded &= getTiles(zoom + 1, tileX * 2, tileY * 2, mat, tiles);
                 loaded &= getTiles(zoom + 1, tileX * 2 + 1, tileY * 2, mat, tiles);
@@ -224,9 +226,10 @@ onload = async () => {
 
         // 2d overlay
         ctx.fillStyle = `white`;
-        ctx.fillText(`lon: ${lon}`, 10, 50);
-        ctx.fillText(`lat: ${lat}`, 10, 75);
-        ctx.fillText(`zoom: ${maxZoom}`, 10, 100);
+        ctx.fillText(`lon: ${lon.toFixed(6)}`, 10, 50);
+        ctx.fillText(`lat: ${lat.toFixed(6)}`, 10, 75);
+        ctx.fillText(`alt: ${(alt - EQUATOR_RADIUS_KM).toFixed(2)}km`, 10, 100);
+        ctx.fillText(`zoom: ${maxZoom}`, 10, 125);
         if(downLonLat !== undefined) {
             const pos = vec3.transformMat4(vec3.create(), lonLat2Pos(downLonLat), mat);
             pos[0] = pos[0] * cnvWidth / 2 + cnvWidth / 2;
