@@ -67,6 +67,7 @@ onload = async () => {
     let downPos;
     let downMat;
     let downLonLat;
+    let lonLat;
     const keys = [];
     onkeydown = (e) => keys[e.key] = true;
     onkeyup = (e) => keys[e.key] = false;
@@ -77,6 +78,7 @@ onload = async () => {
             1
         ];
         downMat = mat;
+        lonLat = [lon, lat];
         const inv = mat4.invert(mat4.create(), downMat);
         const clickPoint = vec3.transformMat4(vec3.create(), downPos, inv);
         const center = vec3.create();
@@ -114,8 +116,8 @@ onload = async () => {
         const worldPos = lerp(origin, dir, t);
         const curLonLat = pos2LonLat(vec3.normalize(vec3.create(), worldPos));
 
-        lon = curLonLat[0] - downLonLat[0];
-        lat = curLonLat[1] - downLonLat[1];
+        lon = curLonLat[0] - downLonLat[0] + lonLat[0];
+        lat = downLonLat[1] - curLonLat[1] + lonLat[1];
     };
 
     // Draw the scene repeatedly
