@@ -55,7 +55,7 @@ onload = async () => {
     let mat = mat4.create();
     let lat = 0;
     let lon = 0;
-    let alt = 1800;
+    let alt = 18000;
     let downPos;
     let downMat;
     let downLonLat;
@@ -125,8 +125,8 @@ onload = async () => {
         ctx.clearRect(0, 0, cnvWidth, cnvHeight);
 
         // controls
-        if (keys['w'] === true) alt = Math.max(1.0002, alt - deltaTime / 10);
-        if (keys['s'] === true) alt = Math.max(1, alt + deltaTime / 10);
+        if (keys['w'] === true) alt = Math.max(1.0002, alt - deltaTime * 100);
+        if (keys['s'] === true) alt = Math.max(1, alt + deltaTime * 100);
         if (keys['ArrowUp'] === true) lat += deltaTime;
         if (keys['ArrowDown'] === true) lat -= deltaTime;
         if (keys['ArrowLeft'] === true) lon += deltaTime;
@@ -135,7 +135,7 @@ onload = async () => {
         // perspective
         const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight; 
         const projMat = mat4.create();
-        mat4.perspective(projMat, 45 * Math.PI / 180, aspect, 0.001, 10000.0); // 1m - 10km
+        mat4.perspective(projMat, 45 * Math.PI / 180, aspect, 0.01, 20000.0); // 10m - 20km
         mat4.translate(projMat, projMat, [-0.0, 0.0, -alt]);
         mat4.rotate(projMat, projMat, deg2rad(lat), [1, 0, 0]);
         mat4.rotate(projMat, projMat, deg2rad(lon), [0, 1, 0]);
