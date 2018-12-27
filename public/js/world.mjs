@@ -1,5 +1,44 @@
 import {getRandomColor, tile2lat, tile2lon, lonLat2Pos, pos2LonLat} from './utils.mjs';
 import {loadTexture} from './texture.mjs';
+import {getBounds, intersectBounds} from "./utils.mjs";
+import {TILE_SIZE} from "./constants.mjs";
+
+const tileCache = {};
+export const getTiles = (gl, zoom, tileX, tileY, mat, screenBounds, tiles) => {
+    const n = tile2lat(tileY, zoom);
+    const e = tile2lon(tileX + 1, zoom);
+    const s = tile2lat(tileY + 1, zoom);
+    const w = tile2lon(tileX, zoom);
+    const nw = vec3.transformMat4([0, 0, 0], lonLat2Pos([w, n]), mat);
+    const ne = vec3.transformMat4([0, 0, 0], lonLat2Pos([e, n]), mat);
+    const se = vec3.transformMat4([0, 0, 0], lonLat2Pos([e, s]), mat);
+    const sw = vec3.transformMat4([0, 0, 0], lonLat2Pos([w, s]), mat);
+    let bounds = getBounds([nw, ne, se, sw]);
+    bounds[0] = bounds[0] * screenBounds[2] / 2 + screenBounds[2] / 2;
+    bounds[1] = bounds[1] * screenBounds[3] / 2 + screenBounds[3] / 2;
+    bounds[2] = bounds[2] * screenBounds[2] / 2 + screenBounds[2] / 2;
+    bounds[3] = bounds[3] * screenBounds[3] / 2 + screenBounds[3] / 2;
+    bounds = intersectBounds(screenBounds, bounds);
+
+    const width = Math.round(bounds[2] - bounds[0]);
+    const height = Math.round(bounds[3] - bounds[1]);
+    if (zoom < 18 && (zoom < 2 || (width > TILE_SIZE * 1.5 && height > 5) || (height > TILE_SIZE * 1.5 && width > 5))) {
+        let loaded = true;
+        loaded &= getTiles(gl, zoom + 1, tileX * 2, tileY * 2, mat, screenBounds, tiles);
+        loaded &= getTiles(gl, zoom + 1, tileX * 2 + 1, tileY * 2, mat, screenBounds, tiles);
+        loaded &= getTiles(gl, zoom + 1, tileX * 2, tileY * 2 + 1, mat, screenBounds, tiles);
+        loaded &= getTiles(gl, zoom + 1, tileX * 2 + 1, tileY * 2 + 1, mat, screenBounds, tiles);
+        if (loaded) return true;
+    }
+
+    const key = `${zoom}/${tileX}/${tileY}`;
+    if (tileCache[key] === undefined) tileCache[key] = initBuffers(gl, tileX, tileY, zoom);
+    if (tileCache[key].texture.loaded) {
+        tiles.push(tileCache[key]);
+        return true;
+    }
+    return false;
+};
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
 export const initBuffers = (gl, tileX, tileY, zoom) => {

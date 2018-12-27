@@ -1,21 +1,8 @@
-import {initBuffers} from './world.mjs';
+import {getTiles} from './world.mjs';
 import {initDefaultShader, initDrawingShader} from './shader.mjs';
-import {
-    deg2rad, lonLat2Pos,
-    tile2lat,
-    tile2lon,
-    getBounds,
-    intersectBounds,
-    lerp,
-    pos2LonLat,
-    getRandomColor,
-    getPowerOfTwo,
-    intersectRayWithSphere
-} from "./utils.mjs";
-import {TILE_SIZE} from "./constants.mjs";
-import {EQUATOR_RADIUS_KM, FOV} from "./constants.mjs";
+import {deg2rad, lonLat2Pos, lerp, pos2LonLat, getPowerOfTwo, intersectRayWithSphere} from "./utils.mjs";
+import {EQUATOR_RADIUS_KM, FOV, TILE_SIZE} from "./constants.mjs";
 
-let first = true;
 onload = async () => {
     // 3d webgl canvas
     const canvas = document.createElement(`canvas`);
@@ -50,7 +37,6 @@ onload = async () => {
     // shaders
     const defaultShader = await initDefaultShader(gl);
     const drawingShader = await initDrawingShader(gl);
-    const tileCache = {};
 
     // state
     let mat = mat4.create();
@@ -87,7 +73,7 @@ onload = async () => {
         const dir = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), clickPoint, origin));
         const t = intersectRayWithSphere(center, radius, origin, dir);
         console.log(`t=${t} clickPoint=${clickPoint} origin=${origin} direction=${dir}`);
-        if(isNaN(t) || !isFinite(t)) return;
+        if (isNaN(t) || !isFinite(t)) return;
         const worldPos = lerp(origin, dir, t);
         downLonLat = pos2LonLat(vec3.normalize(vec3.create(), worldPos));
         console.log(`mouseDown on ${downLonLat} worldPos=${worldPos}`)
@@ -112,7 +98,7 @@ onload = async () => {
         const dir = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), clickPoint, origin));
         const t = intersectRayWithSphere(center, radius, origin, dir);
         console.log(`t=${t} clickPoint=${clickPoint} origin=${origin} direction=${dir}`);
-        if(isNaN(t) || !isFinite(t)) return;
+        if (isNaN(t) || !isFinite(t)) return;
         const worldPos = lerp(origin, dir, t);
         const curLonLat = pos2LonLat(vec3.normalize(vec3.create(), worldPos));
 
@@ -149,77 +135,9 @@ onload = async () => {
         // model position
         const modelViewMatrix = mat4.create();
 
-        // tiles
-        let maxZoom = 0;
-        const getTiles = (zoom, tileX, tileY, mat, tiles) => {
-            maxZoom = Math.max(maxZoom, zoom);
-            const n = tile2lat(tileY, zoom);
-            const e = tile2lon(tileX + 1, zoom);
-            const s = tile2lat(tileY + 1, zoom);
-            const w = tile2lon(tileX, zoom);
-            const nw = vec3.transformMat4([0, 0, 0], lonLat2Pos([w, n]), mat);
-            const ne = vec3.transformMat4([0, 0, 0], lonLat2Pos([e, n]), mat);
-            const se = vec3.transformMat4([0, 0, 0], lonLat2Pos([e, s]), mat);
-            const sw = vec3.transformMat4([0, 0, 0], lonLat2Pos([w, s]), mat);
-            let bounds = getBounds([nw, ne, se, sw]);
-            bounds[0] = bounds[0] * cnvWidth / 2 + cnvWidth / 2;
-            bounds[1] = bounds[1] * cnvHeight / 2 + cnvHeight / 2;
-            bounds[2] = bounds[2] * cnvWidth / 2 + cnvWidth / 2;
-            bounds[3] = bounds[3] * cnvHeight / 2 + cnvHeight / 2;
-            bounds = intersectBounds(screenBounds, bounds);
-            // ctx.strokeStyle = getRandomColor(zoom + tileX + tileY);
-            // ctx.fillStyle = "white";
-            // ctx.strokeWidth = 2;
-            // ctx.beginPath();
-            // ctx.moveTo(bounds[0], bounds[1]);
-            // ctx.lineTo(bounds[2], bounds[1]);
-            // ctx.lineTo(bounds[2], bounds[3]);
-            // ctx.lineTo(bounds[0], bounds[3]);
-            // ctx.lineTo(bounds[0], bounds[1]);
-            // ctx.stroke();
-
-            const width = Math.round(bounds[2] - bounds[0]);
-            const height = Math.round(bounds[3] - bounds[1]);
-            if (first) {
-                console.log(`zoom=${zoom} ${width}x${height} ${bounds}`);
-            }
-
-            if (zoom < 18 && (zoom < 2 || (width > TILE_SIZE * 1.5 && height > 5) || (height > TILE_SIZE * 1.5 && width > 5))) {
-                let loaded = true;
-                loaded &= getTiles(zoom + 1, tileX * 2, tileY * 2, mat, tiles);
-                loaded &= getTiles(zoom + 1, tileX * 2 + 1, tileY * 2, mat, tiles);
-                loaded &= getTiles(zoom + 1, tileX * 2, tileY * 2 + 1, mat, tiles);
-                loaded &= getTiles(zoom + 1, tileX * 2 + 1, tileY * 2 + 1, mat, tiles);
-                if (loaded) {
-                    return true;
-                }
-            }
-
-            const key = `${zoom}/${tileX}/${tileY}`;
-            if (tileCache[key] === undefined) {
-                tileCache[key] = initBuffers(gl, tileX, tileY, zoom);
-            }
-            if (tileCache[key].texture.loaded) {
-                // ctx.fillStyle = "white";
-                // for(let i = 0; i < tileCache[key].positions.length; i += 3) {
-                //     const x = tileCache[key].positions[i];
-                //     const y = tileCache[key].positions[i + 1];
-                //     const z = tileCache[key].positions[i + 2];
-                //     const pos = vec3.transformMat4([0, 0, 0], [x, y, z], mat);
-                //     pos[0] = pos[0] * cnvWidth / 2 + cnvWidth / 2;
-                //     pos[1] = pos[1] * cnvHeight / 2 + cnvHeight / 2;
-                //     ctx.fillRect(pos[0], pos[1], 2, 2);
-                // }
-                tiles.push(tileCache[key]);
-                return true;
-            }
-
-            return false;
-        };
         mat = mat4.multiply(mat4.create(), projMat, modelViewMatrix);
         const tiles = [];
-        getTiles(0, 0, 0, mat, tiles);
-        first = false;
+        getTiles(gl, 0, 0, 0, mat, screenBounds, tiles);
 
         // rendering
         drawScene(gl, defaultShader, tiles, projMat, modelViewMatrix);
@@ -229,8 +147,7 @@ onload = async () => {
         ctx.fillText(`lon: ${lon.toFixed(6)}`, 10, 50);
         ctx.fillText(`lat: ${lat.toFixed(6)}`, 10, 75);
         ctx.fillText(`alt: ${(alt - EQUATOR_RADIUS_KM).toFixed(2)}km`, 10, 100);
-        ctx.fillText(`zoom: ${maxZoom}`, 10, 125);
-        if(downLonLat !== undefined) {
+        if (downLonLat !== undefined) {
             const pos = vec3.transformMat4(vec3.create(), lonLat2Pos(downLonLat), mat);
             pos[0] = pos[0] * cnvWidth / 2 + cnvWidth / 2;
             pos[1] = -pos[1] * cnvHeight / 2 + cnvHeight / 2;
