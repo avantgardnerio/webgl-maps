@@ -22,5 +22,20 @@ app.get(/\/img\/osm\/([0-9]*)\/([0-9]*)\/([0-9]*)\.png/, async (req, res) => {
     res.end(Buffer.from(buffer))
 });
 
+//  https://api.mapbox.com/v4/mapbox.terrain-rgb/$Z/$X/$Y.pngraw?access_token=pk.eyJ1IjoiYmdhcmQ2OTc3
+app.get(/\/img\/mapbox\/terrain\/([0-9]*)\/([0-9]*)\/([0-9]*)\.png/, async (req, res) => {
+    const zoom = parseInt(req.params[0]);
+    const x = parseInt(req.params[1]);
+    const y = parseInt(req.params[2]);
+    const url = ` https://api.mapbox.com/v4/mapbox.terrain-rgb/${zoom}/${x}/${y}.pngraw?access_token=${process.env.MAPBOX_TOKEN}`;
+    console.log('fetching ', url)
+    const resp = await fetch(url);
+    const buffer = await resp.arrayBuffer();
+    console.log('got buffer ', buffer);
+    res.set('Cache-Control', 'immutable');
+    res.contentType('image/png');
+    res.end(Buffer.from(buffer))
+});
+
 const port = parseInt(process.env.PORT || 3000);
 app.listen(port);
