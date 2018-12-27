@@ -27,7 +27,7 @@ app.get(/\/img\/mapbox\/terrain\/([0-9]*)\/([0-9]*)\/([0-9]*)\.png/, async (req,
     const zoom = parseInt(req.params[0]);
     const x = parseInt(req.params[1]);
     const y = parseInt(req.params[2]);
-    const url = ` https://api.mapbox.com/v4/mapbox.terrain-rgb/${zoom}/${x}/${y}.pngraw?access_token=${process.env.MAPBOX_TOKEN}`;
+    const url = `https://api.mapbox.com/v4/mapbox.terrain-rgb/${zoom}/${x}/${y}.pngraw?access_token=${process.env.MAPBOX_TOKEN}`;
     console.log('fetching ', url)
     const resp = await fetch(url);
     const buffer = await resp.arrayBuffer();
