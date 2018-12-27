@@ -1,7 +1,7 @@
 import {getTiles} from './world.mjs';
 import {initDefaultShader, initDrawingShader} from './shader.mjs';
-import {deg2rad, lonLat2Pos, lerp, pos2LonLat, getPowerOfTwo, intersectRayWithSphere, screen2world} from "./utils.mjs";
-import {EQUATOR_RADIUS_KM, FOV, TILE_SIZE} from "./constants.mjs";
+import {deg2rad, lonLat2Pos, getPowerOfTwo, device2LonLat} from "./utils.mjs";
+import {EQUATOR_RADIUS_KM, FOV} from "./constants.mjs";
 
 onload = async () => {
     // 3d webgl canvas
@@ -43,7 +43,6 @@ onload = async () => {
     let lat = 0;
     let lon = 0;
     let alt = 18000;
-    let downPos;
     let downMat;
     let downLonLat;
     let lonLat;
@@ -57,44 +56,19 @@ onload = async () => {
         e.preventDefault();
     };
     onmousedown = (e) => {
-        downPos = screen2world(e.clientX, e.clientY, cnvWidth, cnvHeight);
         downMat = mat;
         lonLat = [lon, lat];
-        const inv = mat4.invert(mat4.create(), downMat);
-        const clickPoint = vec3.transformMat4(vec3.create(), downPos, inv);
-        const center = vec3.create();
-        const radius = EQUATOR_RADIUS_KM;
-        const origin = vec3.transformMat4(vec3.create(), vec3.create(), inv);
-        const dir = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), clickPoint, origin));
-        const t = intersectRayWithSphere(center, radius, origin, dir);
-        console.log(`t=${t} clickPoint=${clickPoint} origin=${origin} direction=${dir}`);
-        if (isNaN(t) || !isFinite(t)) return;
-        const worldPos = lerp(origin, dir, t);
-        downLonLat = pos2LonLat(vec3.normalize(vec3.create(), worldPos));
-        console.log(`mouseDown on ${downLonLat} worldPos=${worldPos}`)
-    };
-    onmouseup = () => {
-        downPos = undefined;
-        downMat = undefined;
-        downLonLat = undefined;
+        downLonLat = device2LonLat(downMat, e.clientX, e.clientY, cnvWidth, cnvHeight);
     };
     onmousemove = (e) => {
         if (downLonLat === undefined) return;
-        const curPos = screen2world(e.clientX, e.clientY, cnvWidth, cnvHeight);
-        const inv = mat4.invert(mat4.create(), downMat);
-        const clickPoint = vec3.transformMat4(vec3.create(), curPos, inv);
-        const center = vec3.create();
-        const radius = EQUATOR_RADIUS_KM;
-        const origin = vec3.transformMat4(vec3.create(), vec3.create(), inv);
-        const dir = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), clickPoint, origin));
-        const t = intersectRayWithSphere(center, radius, origin, dir);
-        console.log(`t=${t} clickPoint=${clickPoint} origin=${origin} direction=${dir}`);
-        if (isNaN(t) || !isFinite(t)) return;
-        const worldPos = lerp(origin, dir, t);
-        const curLonLat = pos2LonLat(vec3.normalize(vec3.create(), worldPos));
-
+        const curLonLat = device2LonLat(downMat, e.clientX, e.clientY, cnvWidth, cnvHeight);
         lon = curLonLat[0] - downLonLat[0] + lonLat[0];
         lat = downLonLat[1] - curLonLat[1] + lonLat[1];
+    };
+    onmouseup = () => {
+        downMat = undefined;
+        downLonLat = undefined;
     };
 
     // Draw the scene repeatedly

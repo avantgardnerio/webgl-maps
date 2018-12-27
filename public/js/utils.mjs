@@ -100,10 +100,23 @@ export const getPowerOfTwo = (value, pow) => {
     return pow;
 };
 
-export const screen2world = (x, y, cnvWidth, cnvHeight) => {
+export const screen2device = (x, y, cnvWidth, cnvHeight) => {
     return [
         (x - cnvWidth / 2) / (cnvWidth / 2),
         -(y - cnvHeight / 2) / (cnvHeight / 2),
         1
     ]
+};
+
+export const device2LonLat = (mat, x, y, cnvWidth, cnvHeight) => {
+    const devicePos = screen2device(x, y, cnvWidth, cnvHeight);
+    const inv = mat4.invert(mat4.create(), mat);
+    const clickPoint = vec3.transformMat4(vec3.create(), devicePos, inv);
+    const origin = vec3.transformMat4(vec3.create(), vec3.create(), inv);
+    const dir = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), clickPoint, origin));
+    const t = intersectRayWithSphere(vec3.create(), EQUATOR_RADIUS_KM, origin, dir);
+    if (isNaN(t) || !isFinite(t)) return undefined;
+    const worldPos = lerp(origin, dir, t);
+    const lonLat = pos2LonLat(vec3.normalize(vec3.create(), worldPos));
+    return lonLat;
 };
