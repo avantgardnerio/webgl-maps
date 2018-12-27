@@ -13,6 +13,7 @@ import {
     intersectRayWithSphere
 } from "./utils.mjs";
 import {TILE_SIZE} from "./constants.mjs";
+import {EQUATOR_RADIUS_KM} from "./constants.mjs";
 
 let first = true;
 onload = async () => {
@@ -78,7 +79,7 @@ onload = async () => {
         const inv = mat4.invert(mat4.create(), downMat);
         const clickPoint = vec3.transformMat4(vec3.create(), downPos, inv);
         const center = vec3.create();
-        const radius = 1;
+        const radius = EQUATOR_RADIUS_KM;
         const origin = vec3.transformMat4(vec3.create(), vec3.create(), inv);
         const dir = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), clickPoint, origin));
         const t = intersectRayWithSphere(center, radius, origin, dir);
@@ -103,7 +104,7 @@ onload = async () => {
         const inv = mat4.invert(mat4.create(), downMat);
         const clickPoint = vec3.transformMat4(vec3.create(), curPos, inv);
         const center = vec3.create();
-        const radius = 1;
+        const radius = EQUATOR_RADIUS_KM;
         const origin = vec3.transformMat4(vec3.create(), vec3.create(), inv);
         const dir = vec3.normalize(vec3.create(), vec3.subtract(vec3.create(), clickPoint, origin));
         const t = intersectRayWithSphere(center, radius, origin, dir);
@@ -135,7 +136,7 @@ onload = async () => {
         // perspective
         const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight; 
         const projMat = mat4.create();
-        mat4.perspective(projMat, 45 * Math.PI / 180, aspect, 0.01, 20000.0); // 10m - 20km
+        mat4.perspective(projMat, 45 * Math.PI / 180, aspect, 0.1, 20000.0); // 10m - 20km
         mat4.translate(projMat, projMat, [-0.0, 0.0, -alt]);
         mat4.rotate(projMat, projMat, deg2rad(lat), [1, 0, 0]);
         mat4.rotate(projMat, projMat, deg2rad(lon), [0, 1, 0]);
