@@ -100,3 +100,10 @@ export const getPowerOfTwo = (value, pow) => {
     return pow;
 };
 
+export const screen2world = (x, y, cnvWidth, cnvHeight) => {
+    return [
+        (x - cnvWidth / 2) / (cnvWidth / 2),
+        -(y - cnvHeight / 2) / (cnvHeight / 2),
+        1
+    ]
+};

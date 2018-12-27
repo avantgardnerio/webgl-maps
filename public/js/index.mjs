@@ -1,6 +1,6 @@
 import {getTiles} from './world.mjs';
 import {initDefaultShader, initDrawingShader} from './shader.mjs';
-import {deg2rad, lonLat2Pos, lerp, pos2LonLat, getPowerOfTwo, intersectRayWithSphere} from "./utils.mjs";
+import {deg2rad, lonLat2Pos, lerp, pos2LonLat, getPowerOfTwo, intersectRayWithSphere, screen2world} from "./utils.mjs";
 import {EQUATOR_RADIUS_KM, FOV, TILE_SIZE} from "./constants.mjs";
 
 onload = async () => {
@@ -58,11 +58,7 @@ onload = async () => {
         e.preventDefault();
     };
     onmousedown = (e) => {
-        downPos = [
-            (e.clientX - gl.canvas.clientWidth / 2) / (gl.canvas.clientWidth / 2),
-            -(e.clientY - gl.canvas.clientHeight / 2) / (gl.canvas.clientHeight / 2),
-            1
-        ];
+        downPos = screen2world(e.clientX, e.clientY, cnvWidth, cnvHeight);
         downMat = mat;
         lonLat = [lon, lat];
         const inv = mat4.invert(mat4.create(), downMat);
@@ -85,11 +81,7 @@ onload = async () => {
     };
     onmousemove = (e) => {
         if (downLonLat === undefined) return;
-        const curPos = [
-            (e.clientX - gl.canvas.clientWidth / 2) / (gl.canvas.clientWidth / 2),
-            -(e.clientY - gl.canvas.clientHeight / 2) / (gl.canvas.clientHeight / 2),
-            1
-        ];
+        const curPos = screen2world(e.clientX, e.clientY, cnvWidth, cnvHeight);
         const inv = mat4.invert(mat4.create(), downMat);
         const clickPoint = vec3.transformMat4(vec3.create(), curPos, inv);
         const center = vec3.create();
@@ -125,7 +117,7 @@ onload = async () => {
         // perspective
         const adjacent = alt - EQUATOR_RADIUS_KM;
         const opposite = adjacent * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
-        const aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+        const aspect = cnvWidth / cnvHeight;
         const projMat = mat4.create();
         mat4.perspective(projMat, FOV, aspect, opposite / 1000, opposite * 10);
         mat4.translate(projMat, projMat, [-0.0, 0.0, -alt]);
