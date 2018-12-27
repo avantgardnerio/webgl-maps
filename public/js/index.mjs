@@ -50,9 +50,8 @@ onload = async () => {
     onkeydown = (e) => keys[e.key] = true;
     onkeyup = (e) => keys[e.key] = false;
     onwheel = (e) => {
-        const adjacent = alt - EQUATOR_RADIUS_KM;
-        const opposite = adjacent * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
-        alt += e.deltaY * opposite / 100;
+        const kmVisible = (alt - EQUATOR_RADIUS_KM) * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
+        alt += e.deltaY * kmVisible / 100;
         e.preventDefault();
     };
     onmousedown = (e) => {
@@ -88,11 +87,9 @@ onload = async () => {
         if (keys['ArrowRight'] === true) lon -= deltaTime;
 
         // perspective
-        const adjacent = alt - EQUATOR_RADIUS_KM;
-        const opposite = adjacent * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
-        const aspect = cnvWidth / cnvHeight;
+        const kmVisible = (alt - EQUATOR_RADIUS_KM) * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
         const projMat = mat4.create();
-        mat4.perspective(projMat, FOV, aspect, opposite / 1000, opposite * 10);
+        mat4.perspective(projMat, FOV, cnvWidth / cnvHeight, kmVisible / 1000, kmVisible * 10);
         mat4.translate(projMat, projMat, [-0.0, 0.0, -alt]);
         mat4.rotate(projMat, projMat, deg2rad(lat), [1, 0, 0]);
         mat4.rotate(projMat, projMat, deg2rad(lon), [0, 1, 0]);
