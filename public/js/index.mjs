@@ -96,7 +96,6 @@ onload = async () => {
 
         // model position
         const modelViewMatrix = mat4.create();
-
         mat = mat4.multiply(mat4.create(), projMat, modelViewMatrix);
         const tiles = [];
         getTiles(gl, defaultShader, 0, 0, 0, mat, screenBounds, tiles);
