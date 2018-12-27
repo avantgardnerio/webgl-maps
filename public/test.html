@@ -18,8 +18,8 @@
             image.onload = function () {
                 ctx.drawImage(image, 0, 0);
                 const imgData = ctx.getImageData(0, 0, width, height).data;
-                for(let y = 0; y < height; y += 16) {
-                    for(let x = 0; x < width; x += 16) {
+                for(let y = 0; y < height; y += 1) {
+                    for(let x = 0; x < width; x += 1) {
                         const height = getMetersAboveSea(imgData, x, y);
                         console.log(`x=${x} y=${y} z=${height}`)
                     }
@@ -28,6 +28,7 @@
             image.src = `img/mapbox/terrain/0/0/0.png`;
         }
 
+        // https://www.mapbox.com/help/access-elevation-data/
         const getMetersAboveSea = (imgData, x, y) => {
             const R = imgData[y * width + x * 4];
             const G = imgData[y * width + x * 4 + 1];
