@@ -22,7 +22,6 @@ app.get(/\/img\/osm\/([0-9]*)\/([0-9]*)\/([0-9]*)\.png/, async (req, res) => {
     res.end(Buffer.from(buffer))
 });
 
-//  https://api.mapbox.com/v4/mapbox.terrain-rgb/$Z/$X/$Y.pngraw?access_token=pk.eyJ1IjoiYmdhcmQ2OTc3
 app.get(/\/img\/mapbox\/terrain\/([0-9]*)\/([0-9]*)\/([0-9]*)\.png/, async (req, res) => {
     const zoom = parseInt(req.params[0]);
     const x = parseInt(req.params[1]);
