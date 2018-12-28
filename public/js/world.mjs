@@ -22,7 +22,11 @@ export const getTiles = (gl, shader, zoom, tileX, tileY, mat, screenBounds, tile
 
     const width = Math.round(bounds[2] - bounds[0]);
     const height = Math.round(bounds[3] - bounds[1]);
-    if (zoom < 18 && (zoom < 2 || (width > TILE_SIZE * 1.5 && height > 5) || (height > TILE_SIZE * 1.5 && width > 5))) {
+    if (zoom < 7 && (
+        zoom < 2
+        || (width > TILE_SIZE * 1.5 && height > TILE_SIZE * 0.5)
+        || (height > TILE_SIZE * 1.5 && width > TILE_SIZE * 0.5))
+    ) {
         let loaded = true;
         loaded &= getTiles(gl, shader, zoom + 1, tileX * 2, tileY * 2, mat, screenBounds, tiles);
         loaded &= getTiles(gl, shader, zoom + 1, tileX * 2 + 1, tileY * 2, mat, screenBounds, tiles);

@@ -7,3 +7,6 @@ node_modules/
 *.iml
 *.iws
 .idea/
+
+# cache
+data/
