@@ -94,19 +94,6 @@ onload = async () => {
             pos[1] = -pos[1] * cnv2d.height / 2 + cnv2d.height / 2;
             cnv2d.ctx.fillRect(pos[0], pos[1], 2, 2);
         }
-        for (let key in tileCache) {
-            const tile = tileCache[key];
-            cnv2d.ctx.strokeStyle = "white";
-            cnv2d.ctx.fillStyle = "white";
-            cnv2d.ctx.strokeWidth = 2;
-            cnv2d.ctx.beginPath();
-            cnv2d.ctx.moveTo((tile.w + 180) / 360 * cnv2d.width, (tile.n + 90) / 180 * cnv2d.height);
-            cnv2d.ctx.lineTo((tile.e + 180) / 360 * cnv2d.width, (tile.n + 90) / 180 * cnv2d.height);
-            cnv2d.ctx.lineTo((tile.e + 180) / 360 * cnv2d.width, (tile.s + 90) / 180 * cnv2d.height);
-            cnv2d.ctx.lineTo((tile.w + 180) / 360 * cnv2d.width, (tile.s + 90) / 180 * cnv2d.height);
-            cnv2d.ctx.lineTo((tile.w + 180) / 360 * cnv2d.width, (tile.n + 90) / 180 * cnv2d.height);
-            cnv2d.ctx.stroke();
-        }
         cnv2d.draw();
 
         requestAnimationFrame(render);
