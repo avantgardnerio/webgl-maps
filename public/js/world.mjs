@@ -3,7 +3,7 @@ import {loadTexture} from './texture.mjs';
 import {getBounds, intersectBounds} from "./utils.mjs";
 import {TILE_SIZE} from "./constants.mjs";
 
-const tileCache = {};
+export const tileCache = {};
 export const getTiles = (gl, shader, zoom, tileX, tileY, mat, screenBounds, tiles) => {
     const n = tile2lat(tileY, zoom);
     const e = tile2lon(tileX + 1, zoom);
@@ -137,6 +137,7 @@ export const initBuffers = (gl, shader, tileX, tileY, zoom) => {
     };
 
     return {
+        n, e, s, w,
         draw,
         texture
     };
