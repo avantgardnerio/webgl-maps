@@ -16,7 +16,7 @@ app.get(/\/img\/osm\/([0-9]*)\/([0-9]*)\/([0-9]*)\.png/, async (req, res) => {
     const y = parseInt(req.params[2]);
 
     const fileBase = `data/osm`;
-    const urlBase = `https://tile.openstreetmap.org/`;
+    const urlBase = `https://tile.openstreetmap.org`;
     serve(zoom, x, y, res, fileBase, urlBase);
 });
 
