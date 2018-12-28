@@ -33,7 +33,7 @@ export const getTiles = (gl, shader, zoom, tileX, tileY, mat, screenBounds, tile
 
     const key = `${zoom}/${tileX}/${tileY}`;
     if (tileCache[key] === undefined) tileCache[key] = initBuffers(gl, shader, tileX, tileY, zoom);
-    if (tileCache[key].texture.loaded) {
+    if (tileCache[key].isLoaded()) {
         tiles.push(tileCache[key]);
         return true;
     }
@@ -46,30 +46,67 @@ export const initBuffers = (gl, shader, tileX, tileY, zoom) => {
     const e = tile2lon(tileX + 1, zoom);
     const s = tile2lat(tileY + 1, zoom);
     const w = tile2lon(tileX, zoom);
-    console.log(`generating tile [${w},${n}] - [${e},${s}]`);
 
     // Load texture
     const texture = loadTexture(gl, `img/osm/${zoom}/${tileX}/${tileY}.png`);
-
-    // positions & Texture coordinates
-    const positions = [];
-    const textureCoordinates = [];
+    const positionBuffer = gl.createBuffer();
+    const normalBuffer = gl.createBuffer();
+    const textureCoordBuffer = gl.createBuffer();
+    const indexBuffer = gl.createBuffer();
     const resolution = 16;
-    const yInc = (n - s) / resolution;
-    const xInc = (e - w) / resolution;
-    for(let y = 0; y <= resolution; y++) {
-        for(let x = 0; x <= resolution; x++) {
-            const lon = x * xInc + w;
-            const lat = y * yInc + s;
-            const pos = lonLat2Pos([lon, lat]);
-            positions.push(...pos);
+    let loaded = false;
 
-            const u = (lon - w) / (e - w);
-            const v = (n - lat) / (n - s);
-            const texCoord = [u, v];
-            textureCoordinates.push(...texCoord);
+    // load terrain
+    const img = new Image();
+    img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.setAttribute('width', img.width);
+        canvas.setAttribute('height', img.height);
+        ctx.drawImage(img, 0, 0);
+        const imgData = ctx.getImageData(0, 0, img.width, img.height);
+
+        // positions & Texture coordinates
+        const positions = [];
+        const textureCoordinates = [];
+        const yInc = (n - s) / resolution;
+        const xInc = (e - w) / resolution;
+        for(let y = 0; y <= resolution; y++) {
+            for(let x = 0; x <= resolution; x++) {
+                const imgX = x * 16;
+                const imgY = y * 16;
+                const elevation = getMetersAboveSea(imgData, imgX, imgY);
+
+                const lon = x * xInc + w;
+                const lat = y * yInc + s;
+                const pos = lonLat2Pos([lon, lat], elevation / 1000);
+                positions.push(...pos);
+
+                const u = (lon - w) / (e - w);
+                const v = (n - lat) / (n - s);
+                const texCoord = [u, v];
+                textureCoordinates.push(...texCoord);
+            }
         }
-    }
+
+        // normals
+        const vertexNormals = [];
+        for (let i = 0; i < positions.length; i += 3) {
+            const vertPos = [positions[i], positions[i + 1], positions[i + 2]];
+            const norm = vec3.normalize(vertPos, vertPos);
+            vertexNormals.push(...norm);
+        }
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW);
+
+        loaded = true;
+    };
+    img.src = `img/mapbox/terrain/${zoom}/${tileX}/${tileY}.png`;
 
     // indices
     let indices = [];
@@ -83,28 +120,6 @@ export const initBuffers = (gl, shader, tileX, tileY, zoom) => {
             indices.push(se, nw, ne);
         }
     }
-
-    // normals
-    const vertexNormals = [];
-    for (let i = 0; i < positions.length; i += 3) {
-        const vertPos = [positions[i], positions[i + 1], positions[i + 2]];
-        const norm = vec3.normalize(vertPos, vertPos);
-        Array.prototype.push.apply(vertexNormals, norm);
-    }
-
-    const positionBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-
-    const normalBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
-
-    const textureCoordBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW);
-
-    const indexBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
     gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
@@ -139,6 +154,16 @@ export const initBuffers = (gl, shader, tileX, tileY, zoom) => {
     return {
         n, e, s, w,
         draw,
-        texture
+        texture,
+        isLoaded: () => texture.loaded && loaded
     };
+};
+
+// https://www.mapbox.com/help/access-elevation-data/
+const getMetersAboveSea = (imgData, x, y) => {
+    const R = imgData.data[y * imgData.width + x * 4];
+    const G = imgData.data[y * imgData.width + x * 4 + 1];
+    const B = imgData.data[y * imgData.width + x * 4 + 2];
+    const height = -10000 + ((R * 256 * 256 + G * 256 + B) * 0.1);
+    return height;
 };

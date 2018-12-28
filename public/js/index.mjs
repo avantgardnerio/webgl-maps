@@ -24,6 +24,7 @@ onload = async () => {
     let lat = 0;
     let lon = 0;
     let alt = 18000;
+    let ang = 0;
     let downMat;
     let downLonLat;
     let lonLat;
@@ -58,10 +59,15 @@ onload = async () => {
         const deltaTime = (now - last) / 1000;
         cnv2d.clear();
 
+        // controls
+        if (keys['ArrowUp'] === true) ang += deltaTime * 10;
+        if (keys['ArrowDown'] === true) ang -= deltaTime * 10;
+
         // perspective
         const kmVisible = (alt - EQUATOR_RADIUS_KM) * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
         const projMat = mat4.create();
         mat4.perspective(projMat, FOV, canvas.width / canvas.height, kmVisible / 1000, kmVisible * 10);
+        mat4.rotate(projMat, projMat, deg2rad(-ang), [1, 0, 0]);
         mat4.translate(projMat, projMat, [-0.0, 0.0, -alt]);
         mat4.rotate(projMat, projMat, deg2rad(lat), [1, 0, 0]);
         mat4.rotate(projMat, projMat, deg2rad(lon), [0, 1, 0]);

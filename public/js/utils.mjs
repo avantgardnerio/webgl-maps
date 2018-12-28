@@ -36,12 +36,12 @@ export const pos2LonLat = (vec) => {
     return [lon, lat];
 };
 
-export const lonLat2Pos = (vec) => {
+export const lonLat2Pos = (vec, elevation = 0) => {
     const lon = deg2rad(vec[0] + 90);
     const lat = deg2rad(vec[1]);
-    const x = -EQUATOR_RADIUS_KM * Math.cos(lon) * Math.cos(lat);
-    const y = POLAR_RADIUS_KM * Math.sin(lat);
-    const z = EQUATOR_RADIUS_KM * Math.sin(lon) * Math.cos(lat);
+    const x = -(EQUATOR_RADIUS_KM + elevation) * Math.cos(lon) * Math.cos(lat);
+    const y = (POLAR_RADIUS_KM + elevation) * Math.sin(lat);
+    const z = (EQUATOR_RADIUS_KM + elevation) * Math.sin(lon) * Math.cos(lat);
     return [x, y, z];
 };
 
