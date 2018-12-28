@@ -69,7 +69,7 @@ onload = async () => {
         // perspective
         const kmVisible = (alt - EQUATOR_RADIUS_KM) * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
         const projMat = mat4.create();
-        mat4.perspective(projMat, FOV, cnv2d.width / cnv2d.height, kmVisible / 1000, kmVisible * 10);
+        mat4.perspective(projMat, FOV, canvas.width / canvas.height, kmVisible / 1000, kmVisible * 10);
         mat4.translate(projMat, projMat, [-0.0, 0.0, -alt]);
         mat4.rotate(projMat, projMat, deg2rad(lat), [1, 0, 0]);
         mat4.rotate(projMat, projMat, deg2rad(lon), [0, 1, 0]);
