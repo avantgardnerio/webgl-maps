@@ -58,14 +58,6 @@ onload = async () => {
         const deltaTime = (now - last) / 1000;
         cnv2d.clear();
 
-        // controls
-        if (keys['w'] === true) alt = Math.max(1.0002, alt - deltaTime * 100);
-        if (keys['s'] === true) alt = Math.max(1, alt + deltaTime * 100);
-        if (keys['ArrowUp'] === true) lat += deltaTime;
-        if (keys['ArrowDown'] === true) lat -= deltaTime;
-        if (keys['ArrowLeft'] === true) lon += deltaTime;
-        if (keys['ArrowRight'] === true) lon -= deltaTime;
-
         // perspective
         const kmVisible = (alt - EQUATOR_RADIUS_KM) * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
         const projMat = mat4.create();
@@ -88,12 +80,6 @@ onload = async () => {
         cnv2d.ctx.fillText(`lon: ${lon.toFixed(6)}`, 10, 50);
         cnv2d.ctx.fillText(`lat: ${lat.toFixed(6)}`, 10, 75);
         cnv2d.ctx.fillText(`alt: ${(alt - EQUATOR_RADIUS_KM).toFixed(2)}km`, 10, 100);
-        if (downLonLat !== undefined) {
-            const pos = vec3.transformMat4(vec3.create(), lonLat2Pos(downLonLat), mat);
-            pos[0] = pos[0] * cnv2d.width / 2 + cnv2d.width / 2;
-            pos[1] = -pos[1] * cnv2d.height / 2 + cnv2d.height / 2;
-            cnv2d.ctx.fillRect(pos[0], pos[1], 2, 2);
-        }
         cnv2d.draw();
 
         requestAnimationFrame(render);
