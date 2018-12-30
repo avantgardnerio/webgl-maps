@@ -1,23 +1,13 @@
 import {getTiles, tileCache} from './world.mjs';
-import {initDefaultShader, initDrawingShader} from './shader.mjs';
 import {deg2rad, lonLat2Pos, getPowerOfTwo, device2LonLat} from "./utils.mjs";
 import {EQUATOR_RADIUS_KM, FOV} from "./constants.mjs";
-import {createCanvas} from "./canvas.mjs";
 
 onload = async () => {
-    // 3d webgl canvas
     const canvas = document.createElement(`canvas`);
     canvas.setAttribute(`width`, `${innerWidth}px`);
     canvas.setAttribute(`height`, `${innerHeight}px`);
     document.body.appendChild(canvas);
-    const gl = canvas.getContext('webgl');
-
-    // shaders
-    const defaultShader = await initDefaultShader(gl);
-    const drawingShader = await initDrawingShader(gl);
-
-    // 2d drawing canvas
-    const cnv2d = createCanvas(gl, drawingShader, innerWidth, innerHeight);
+    const ctx = canvas.getContext('2d');
 
     // state
     let mat = mat4.create();
@@ -39,11 +29,11 @@ onload = async () => {
     onmousedown = (e) => {
         downMat = mat;
         lonLat = [lon, lat];
-        downLonLat = device2LonLat(downMat, e.clientX, e.clientY, cnv2d.width, cnv2d.height);
+        downLonLat = device2LonLat(downMat, e.clientX, e.clientY, canvas.width, canvas.height);
     };
     onmousemove = (e) => {
         if (downLonLat === undefined) return;
-        const curLonLat = device2LonLat(downMat, e.clientX, e.clientY, cnv2d.width, cnv2d.height);
+        const curLonLat = device2LonLat(downMat, e.clientX, e.clientY, canvas.width, canvas.height);
         lon = curLonLat[0] - downLonLat[0] + lonLat[0];
         lat = downLonLat[1] - curLonLat[1] + lonLat[1];
     };
@@ -57,7 +47,8 @@ onload = async () => {
     let last = start;
     const render = (now) => {
         const deltaTime = (now - last) / 1000;
-        cnv2d.clear();
+        ctx.fillStyle = `rgba(1, 0, 0, 1)`;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         // controls
         if (keys['ArrowUp'] === true) ang += deltaTime * 10;
@@ -76,17 +67,16 @@ onload = async () => {
         const modelViewMatrix = mat4.create();
         mat = mat4.multiply(mat4.create(), projMat, modelViewMatrix);
         const tiles = [];
-        getTiles(gl, defaultShader, 0, 0, 0, mat, [0, 0, cnv2d.width, cnv2d.height], tiles);
+        getTiles(0, 0, 0, mat, [0, 0, canvas.width, canvas.height], tiles);
 
         // rendering
-        drawScene(gl, defaultShader, tiles, projMat, modelViewMatrix);
+        drawScene(ctx, canvas, tiles, projMat, modelViewMatrix);
 
         // 2d overlay
-        cnv2d.ctx.fillStyle = `white`;
-        cnv2d.ctx.fillText(`lon: ${lon.toFixed(6)}`, 10, 50);
-        cnv2d.ctx.fillText(`lat: ${lat.toFixed(6)}`, 10, 75);
-        cnv2d.ctx.fillText(`alt: ${(alt - EQUATOR_RADIUS_KM).toFixed(2)}km`, 10, 100);
-        cnv2d.draw();
+        ctx.fillStyle = `white`;
+        ctx.fillText(`lon: ${lon.toFixed(6)}`, 10, 50);
+        ctx.fillText(`lat: ${lat.toFixed(6)}`, 10, 75);
+        ctx.fillText(`alt: ${(alt - EQUATOR_RADIUS_KM).toFixed(2)}km`, 10, 100);
 
         requestAnimationFrame(render);
         last = now;
@@ -94,20 +84,11 @@ onload = async () => {
     requestAnimationFrame(render);
 };
 
-const drawScene = (gl, shader, models, projectionMatrix, modelViewMatrix) => {
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clearDepth(1.0);
-    gl.enable(gl.DEPTH_TEST);
-    gl.depthFunc(gl.LEQUAL);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+const drawScene = (ctx, canvas, models, projectionMatrix, modelViewMatrix) => {
+    ctx.fillStyle = `rgba(0, 0, 0, 1)`;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const normalMatrix = mat4.create();
-    mat4.invert(normalMatrix, modelViewMatrix);
-    mat4.transpose(normalMatrix, normalMatrix);
-    gl.useProgram(shader.program);
-    gl.uniformMatrix4fv(shader.uniformLocations.projectionMatrix, false, projectionMatrix);
-    gl.uniformMatrix4fv(shader.uniformLocations.modelViewMatrix, false, modelViewMatrix);
-    gl.uniformMatrix4fv(shader.uniformLocations.normalMatrix, false, normalMatrix);
-
-    for (let model of models) model.draw();
+    for (let model of models) {
+        model.draw(ctx, canvas, projectionMatrix, modelViewMatrix);
+    }
 };

@@ -4,7 +4,7 @@ import {getBounds, intersectBounds} from "./utils.mjs";
 import {TILE_SIZE} from "./constants.mjs";
 
 export const tileCache = {};
-export const getTiles = (gl, shader, zoom, tileX, tileY, mat, screenBounds, tiles) => {
+export const getTiles = (zoom, tileX, tileY, mat, screenBounds, tiles) => {
     const n = tile2lat(tileY, zoom);
     const e = tile2lon(tileX + 1, zoom);
     const s = tile2lat(tileY + 1, zoom);
@@ -22,21 +22,21 @@ export const getTiles = (gl, shader, zoom, tileX, tileY, mat, screenBounds, tile
 
     const width = Math.round(bounds[2] - bounds[0]);
     const height = Math.round(bounds[3] - bounds[1]);
-    if (zoom < 7 && (
+    if (zoom < 18 && (
         zoom < 2
         || (width > TILE_SIZE * 1.5 && height > TILE_SIZE * 0.5)
         || (height > TILE_SIZE * 1.5 && width > TILE_SIZE * 0.5))
     ) {
         let loaded = true;
-        loaded &= getTiles(gl, shader, zoom + 1, tileX * 2, tileY * 2, mat, screenBounds, tiles);
-        loaded &= getTiles(gl, shader, zoom + 1, tileX * 2 + 1, tileY * 2, mat, screenBounds, tiles);
-        loaded &= getTiles(gl, shader, zoom + 1, tileX * 2, tileY * 2 + 1, mat, screenBounds, tiles);
-        loaded &= getTiles(gl, shader, zoom + 1, tileX * 2 + 1, tileY * 2 + 1, mat, screenBounds, tiles);
+        loaded &= getTiles(zoom + 1, tileX * 2, tileY * 2, mat, screenBounds, tiles);
+        loaded &= getTiles(zoom + 1, tileX * 2 + 1, tileY * 2, mat, screenBounds, tiles);
+        loaded &= getTiles(zoom + 1, tileX * 2, tileY * 2 + 1, mat, screenBounds, tiles);
+        loaded &= getTiles(zoom + 1, tileX * 2 + 1, tileY * 2 + 1, mat, screenBounds, tiles);
         if (loaded) return true;
     }
 
     const key = `${zoom}/${tileX}/${tileY}`;
-    if (tileCache[key] === undefined) tileCache[key] = initBuffers(gl, shader, tileX, tileY, zoom);
+    if (tileCache[key] === undefined) tileCache[key] = initBuffers(tileX, tileY, zoom);
     if (tileCache[key].isLoaded()) {
         tiles.push(tileCache[key]);
         return true;
@@ -45,22 +45,20 @@ export const getTiles = (gl, shader, zoom, tileX, tileY, mat, screenBounds, tile
 };
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
-export const initBuffers = (gl, shader, tileX, tileY, zoom) => {
+export const initBuffers = (tileX, tileY, zoom) => {
     const n = tile2lat(tileY, zoom);
     const e = tile2lon(tileX + 1, zoom);
     const s = tile2lat(tileY + 1, zoom);
     const w = tile2lon(tileX, zoom);
 
     // Load texture
-    const texture = loadTexture(gl, `img/osm/${zoom}/${tileX}/${tileY}.png`);
-    const positionBuffer = gl.createBuffer();
-    const normalBuffer = gl.createBuffer();
-    const textureCoordBuffer = gl.createBuffer();
-    const indexBuffer = gl.createBuffer();
+    const texture = loadTexture(`img/osm/${zoom}/${tileX}/${tileY}.png`);
     const resolution = 16;
     let loaded = false;
 
     // load terrain
+    const positions = [];
+    const textureCoordinates = [];
     const img = new Image();
     img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -71,8 +69,6 @@ export const initBuffers = (gl, shader, tileX, tileY, zoom) => {
         const imgData = ctx.getImageData(0, 0, img.width, img.height);
 
         // positions & Texture coordinates
-        const positions = [];
-        const textureCoordinates = [];
         const yInc = (n - s) / resolution;
         const xInc = (e - w) / resolution;
         for(let y = 0; y <= resolution; y++) {
@@ -101,13 +97,6 @@ export const initBuffers = (gl, shader, tileX, tileY, zoom) => {
             vertexNormals.push(...norm);
         }
 
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(positions), gl.STATIC_DRAW);
-        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexNormals), gl.STATIC_DRAW);
-        gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(textureCoordinates), gl.STATIC_DRAW);
-
         loaded = true;
     };
     img.src = `img/mapbox/terrain/${zoom}/${tileX}/${tileY}.png`;
@@ -124,35 +113,18 @@ export const initBuffers = (gl, shader, tileX, tileY, zoom) => {
             indices.push(se, nw, ne);
         }
     }
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(indices), gl.STATIC_DRAW);
 
-    const draw = () => {
-        // positions
-        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-        gl.vertexAttribPointer(shader.attribLocations.vertexPosition, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(shader.attribLocations.vertexPosition);
-
-        // texture coords
-        gl.bindBuffer(gl.ARRAY_BUFFER, textureCoordBuffer);
-        gl.vertexAttribPointer(shader.attribLocations.textureCoord, 2, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(shader.attribLocations.textureCoord);
-
-        // normals
-        gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer);
-        gl.vertexAttribPointer(shader.attribLocations.vertexNormal, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(shader.attribLocations.vertexNormal);
-
-        // indices
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-
-        // textures
-        gl.activeTexture(gl.TEXTURE0);
-        gl.bindTexture(gl.TEXTURE_2D, texture.texture);
-        gl.uniform1i(shader.uniformLocations.uSampler, 0);
-
-        // draw
-        gl.drawElements(gl.TRIANGLES, indices.length, gl.UNSIGNED_SHORT, 0);
+    const draw = (ctx, canvas, projMat, modelViewMatrix) => {
+        const mat = mat4.multiply(mat4.create(), projMat, modelViewMatrix);
+        ctx.fillStyle = "white";
+        for(let i = 0; i < positions.length; i += 3) {
+            const pos = vec4.transformMat4(vec4.create(), [positions[i], positions[i+1], positions[i+2], 1], mat);
+            pos[0] = pos[0] / pos[3];
+            pos[1] = pos[1] / pos[3];
+            pos[0] = pos[0] * canvas.width / 2 + canvas.width / 2;
+            pos[1] = pos[1] * canvas.height / 2 + canvas.height / 2;
+            ctx.fillRect(pos[0], pos[1], 2, 2);
+        }
     };
 
     return {
