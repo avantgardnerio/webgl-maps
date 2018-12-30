@@ -6,12 +6,13 @@ export const loadTexture = (url) => {
     const result = {
         image,
         url,
-        loaded: false
+        //loaded: false
+        loaded: true
     };
     image.onload = function () {
         result.loaded = true;
     };
-    image.src = url;
+    //image.src = url;
 
     return result;
 };
