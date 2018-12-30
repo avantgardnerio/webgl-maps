@@ -9,10 +9,18 @@ export const getTiles = (gl, shader, zoom, tileX, tileY, mat, screenBounds, tile
     const e = tile2lon(tileX + 1, zoom);
     const s = tile2lat(tileY + 1, zoom);
     const w = tile2lon(tileX, zoom);
-    const nw = vec3.transformMat4([0, 0, 0], lonLat2Pos([w, n]), mat);
-    const ne = vec3.transformMat4([0, 0, 0], lonLat2Pos([e, n]), mat);
-    const se = vec3.transformMat4([0, 0, 0], lonLat2Pos([e, s]), mat);
-    const sw = vec3.transformMat4([0, 0, 0], lonLat2Pos([w, s]), mat);
+    const nw = vec4.transformMat4([0, 0, 0, 0], [...lonLat2Pos([w, n]), 1], mat);
+    const ne = vec4.transformMat4([0, 0, 0, 0], [...lonLat2Pos([e, n]), 1], mat);
+    const se = vec4.transformMat4([0, 0, 0, 0], [...lonLat2Pos([e, s]), 1], mat);
+    const sw = vec4.transformMat4([0, 0, 0, 0], [...lonLat2Pos([w, s]), 1], mat);
+    nw[0] = nw[0] / nw[3];
+    nw[1] = nw[1] / nw[3];
+    ne[0] = ne[0] / ne[3];
+    ne[1] = ne[1] / ne[3];
+    se[0] = se[0] / se[3];
+    se[1] = se[1] / se[3];
+    sw[0] = sw[0] / sw[3];
+    sw[1] = sw[1] / sw[3];
     let bounds = getBounds([nw, ne, se, sw]);
     bounds[0] = bounds[0] * screenBounds[2] / 2 + screenBounds[2] / 2;
     bounds[1] = bounds[1] * screenBounds[3] / 2 + screenBounds[3] / 2;
@@ -22,26 +30,38 @@ export const getTiles = (gl, shader, zoom, tileX, tileY, mat, screenBounds, tile
 
     const width = Math.round(bounds[2] - bounds[0]);
     const height = Math.round(bounds[3] - bounds[1]);
-    if (zoom < 7 && (
-        zoom < 2
-        || (width > TILE_SIZE * 1.5 && height > TILE_SIZE * 0.5)
-        || (height > TILE_SIZE * 1.5 && width > TILE_SIZE * 0.5))
-    ) {
+
+    const recurse = () => {
         let loaded = true;
         loaded &= getTiles(gl, shader, zoom + 1, tileX * 2, tileY * 2, mat, screenBounds, tiles);
         loaded &= getTiles(gl, shader, zoom + 1, tileX * 2 + 1, tileY * 2, mat, screenBounds, tiles);
         loaded &= getTiles(gl, shader, zoom + 1, tileX * 2, tileY * 2 + 1, mat, screenBounds, tiles);
         loaded &= getTiles(gl, shader, zoom + 1, tileX * 2 + 1, tileY * 2 + 1, mat, screenBounds, tiles);
         if (loaded) return true;
-    }
-
+        return terminate();
+    };
+    const terminate = () => {
     const key = `${zoom}/${tileX}/${tileY}`;
-    if (tileCache[key] === undefined) tileCache[key] = initBuffers(gl, shader, tileX, tileY, zoom);
-    if (tileCache[key].isLoaded()) {
-        tiles.push(tileCache[key]);
+        if (tileCache[key] === undefined) tileCache[key] = initBuffers(gl, shader, tileX, tileY, zoom);
+        if (tileCache[key].isLoaded()) {
+            tiles.push(tileCache[key]);
+            return true;
+        }
+        return false;
+    };
+    const entirelyInFront = () => {
+        if(nw[2] < 0 || ne[2] < 0 || se[2] < 0 || sw[2] < 0) return false;
+        if(nw[3] < 0 || ne[3] < 0 || se[3] < 0 || sw[3] < 0) return false;
         return true;
-    }
-    return false;
+    };
+
+    if(zoom < 3) return recurse();
+    if(zoom >= 18) return terminate();
+    if(!entirelyInFront()) return terminate();
+    if(width > TILE_SIZE * 1.5 && height > TILE_SIZE * 0.5) return recurse();
+    if(height > TILE_SIZE * 1.5 && width > TILE_SIZE * 0.5) return recurse();
+
+    return terminate();
 };
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
