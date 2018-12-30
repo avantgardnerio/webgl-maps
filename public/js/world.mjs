@@ -13,19 +13,15 @@ export const getTiles = (gl, shader, zoom, tileX, tileY, mat, screenBounds, tile
     const ne = vec4.transformMat4([0, 0, 0, 0], [...lonLat2Pos([e, n]), 1], mat);
     const se = vec4.transformMat4([0, 0, 0, 0], [...lonLat2Pos([e, s]), 1], mat);
     const sw = vec4.transformMat4([0, 0, 0, 0], [...lonLat2Pos([w, s]), 1], mat);
-    nw[0] = nw[0] / nw[3];
-    nw[1] = nw[1] / nw[3];
-    ne[0] = ne[0] / ne[3];
-    ne[1] = ne[1] / ne[3];
-    se[0] = se[0] / se[3];
-    se[1] = se[1] / se[3];
-    sw[0] = sw[0] / sw[3];
-    sw[1] = sw[1] / sw[3];
+    nw[0] = nw[0] / nw[3] * screenBounds[2] / 2 + screenBounds[2] / 2;
+    nw[1] = nw[1] / nw[3] * -screenBounds[3] / 2 + screenBounds[3] / 2;
+    ne[0] = ne[0] / ne[3] * screenBounds[2] / 2 + screenBounds[2] / 2;
+    ne[1] = ne[1] / ne[3] * -screenBounds[3] / 2 + screenBounds[3] / 2;
+    se[0] = se[0] / se[3] * screenBounds[2] / 2 + screenBounds[2] / 2;
+    se[1] = se[1] / se[3] * -screenBounds[3] / 2 + screenBounds[3] / 2;
+    sw[0] = sw[0] / sw[3] * screenBounds[2] / 2 + screenBounds[2] / 2;
+    sw[1] = sw[1] / sw[3] * -screenBounds[3] / 2 + screenBounds[3] / 2;
     let bounds = getBounds([nw, ne, se, sw]);
-    bounds[0] = bounds[0] * screenBounds[2] / 2 + screenBounds[2] / 2;
-    bounds[1] = bounds[1] * screenBounds[3] / 2 + screenBounds[3] / 2;
-    bounds[2] = bounds[2] * screenBounds[2] / 2 + screenBounds[2] / 2;
-    bounds[3] = bounds[3] * screenBounds[3] / 2 + screenBounds[3] / 2;
     bounds = intersectBounds(screenBounds, bounds);
 
     const width = Math.round(bounds[2] - bounds[0]);
@@ -41,7 +37,7 @@ export const getTiles = (gl, shader, zoom, tileX, tileY, mat, screenBounds, tile
         return terminate();
     };
     const terminate = () => {
-    const key = `${zoom}/${tileX}/${tileY}`;
+        const key = `${zoom}/${tileX}/${tileY}`;
         if (tileCache[key] === undefined) tileCache[key] = initBuffers(gl, shader, tileX, tileY, zoom);
         if (tileCache[key].isLoaded()) {
             tiles.push(tileCache[key]);
@@ -50,18 +46,29 @@ export const getTiles = (gl, shader, zoom, tileX, tileY, mat, screenBounds, tile
         return false;
     };
     const entirelyInFront = () => {
-        if(nw[2] < 0 || ne[2] < 0 || se[2] < 0 || sw[2] < 0) return false;
-        if(nw[3] < 0 || ne[3] < 0 || se[3] < 0 || sw[3] < 0) return false;
+        if (nw[2] < 0 || ne[2] < 0 || se[2] < 0 || sw[2] < 0) return false;
+        if (nw[3] < 0 || ne[3] < 0 || se[3] < 0 || sw[3] < 0) return false;
+        return true;
+    };
+    const entirelyInBack = () => {
+        if (nw[2] > 0 || ne[2] > 0 || se[2] > 0 || sw[2] > 0) return false;
+        if (nw[3] > 0 || ne[3] > 0 || se[3] > 0 || sw[3] > 0) return false;
         return true;
     };
 
-    if(zoom < 3) return recurse();
-    if(zoom >= 18) return terminate();
-    if(!entirelyInFront()) return terminate();
-    if(width > TILE_SIZE * 1.5 && height > TILE_SIZE * 0.5) return recurse();
-    if(height > TILE_SIZE * 1.5 && width > TILE_SIZE * 0.5) return recurse();
-
-    return terminate();
+    if (zoom < 3) return recurse();
+    if (zoom >= 18) return terminate();
+    if(entirelyInBack()) return terminate();
+    if (entirelyInFront()) {
+        if (width > TILE_SIZE * 1.5 && height > TILE_SIZE * 0.5) return recurse();
+        if (height > TILE_SIZE * 1.5 && width > TILE_SIZE * 0.5) return recurse();
+        return terminate();
+    }
+    if(zoom < 7) {
+        return recurse();
+    } else {
+        return terminate();
+    }
 };
 
 // http://blog.andreaskahler.com/2009/06/creating-icosphere-mesh-in-code.html
@@ -95,8 +102,8 @@ export const initBuffers = (gl, shader, tileX, tileY, zoom) => {
         const textureCoordinates = [];
         const yInc = (n - s) / resolution;
         const xInc = (e - w) / resolution;
-        for(let y = 0; y <= resolution; y++) {
-            for(let x = 0; x <= resolution; x++) {
+        for (let y = 0; y <= resolution; y++) {
+            for (let x = 0; x <= resolution; x++) {
                 const imgX = x * 16;
                 const imgY = y * 16;
                 const elevation = getMetersAboveSea(imgData, imgX, imgY);
@@ -134,12 +141,12 @@ export const initBuffers = (gl, shader, tileX, tileY, zoom) => {
 
     // indices
     let indices = [];
-    for(let y = 1; y <= resolution; y++) {
-        for(let x = 1; x <= resolution; x++) {
-            const sw = (y - 1) * (resolution+1) + (x - 1);
-            const se = (y - 1) * (resolution+1) + x;
-            const nw = y * (resolution+1) + (x - 1);
-            const ne = y * (resolution+1) + x;
+    for (let y = 1; y <= resolution; y++) {
+        for (let x = 1; x <= resolution; x++) {
+            const sw = (y - 1) * (resolution + 1) + (x - 1);
+            const se = (y - 1) * (resolution + 1) + x;
+            const nw = y * (resolution + 1) + (x - 1);
+            const ne = y * (resolution + 1) + x;
             indices.push(sw, nw, se);
             indices.push(se, nw, ne);
         }

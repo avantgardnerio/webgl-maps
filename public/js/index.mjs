@@ -66,7 +66,7 @@ onload = async () => {
         // perspective
         const kmVisible = (alt - EQUATOR_RADIUS_KM) * Math.tan(FOV / 2) * 2; // how much ground are we looking at?
         const projMat = mat4.create();
-        mat4.perspective(projMat, FOV, canvas.width / canvas.height, kmVisible / 1000, kmVisible * 10);
+        mat4.perspective(projMat, FOV, canvas.width / canvas.height, kmVisible / 250, kmVisible * 40);
         mat4.rotate(projMat, projMat, deg2rad(-ang), [1, 0, 0]);
         mat4.translate(projMat, projMat, [-0.0, 0.0, -alt]);
         mat4.rotate(projMat, projMat, deg2rad(lat), [1, 0, 0]);
@@ -86,6 +86,19 @@ onload = async () => {
         cnv2d.ctx.fillText(`lon: ${lon.toFixed(6)}`, 10, 50);
         cnv2d.ctx.fillText(`lat: ${lat.toFixed(6)}`, 10, 75);
         cnv2d.ctx.fillText(`alt: ${(alt - EQUATOR_RADIUS_KM).toFixed(2)}km`, 10, 100);
+        for (let key in tileCache) {
+            const tile = tileCache[key];
+            cnv2d.ctx.strokeStyle = "white";
+            cnv2d.ctx.fillStyle = "white";
+            cnv2d.ctx.strokeWidth = 2;
+            cnv2d.ctx.beginPath();
+            cnv2d.ctx.moveTo((tile.w + 180) / 360 * cnv2d.width, (tile.n + 90) / 180 * cnv2d.height);
+            cnv2d.ctx.lineTo((tile.e + 180) / 360 * cnv2d.width, (tile.n + 90) / 180 * cnv2d.height);
+            cnv2d.ctx.lineTo((tile.e + 180) / 360 * cnv2d.width, (tile.s + 90) / 180 * cnv2d.height);
+            cnv2d.ctx.lineTo((tile.w + 180) / 360 * cnv2d.width, (tile.s + 90) / 180 * cnv2d.height);
+            cnv2d.ctx.lineTo((tile.w + 180) / 360 * cnv2d.width, (tile.n + 90) / 180 * cnv2d.height);
+            cnv2d.ctx.stroke();
+        }
         cnv2d.draw();
 
         requestAnimationFrame(render);
